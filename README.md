@@ -63,7 +63,7 @@ pip install -r requirements.txt
 ### 2.2 Configurar variables de entorno
 
 El archivo `.env.example` ya viene con valores por defecto:
-crear.env y rellenar con los valores que hagan falta
+crear.env y rellenar con los valores que hagan faltagi
 ```env
 # Database
 DATABASE_URL=sqlite:///./afamar.db

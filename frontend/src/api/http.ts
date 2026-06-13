@@ -1,7 +1,9 @@
 import axios from "axios";
 
+const apiUrl = (typeof window !== "undefined" && window.APP_CONFIG?.API_URL) || import.meta.env.VITE_API_URL || "/api/v1";
+
 const http = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || "/api/v1",
+  baseURL: apiUrl,
   headers: { "Content-Type": "application/json" },
   timeout: 15000,
 });

@@ -1,7 +1,5 @@
-import io
-
 from fastapi import APIRouter, Depends, HTTPException
-from fastapi.responses import StreamingResponse
+from fastapi.responses import Response
 from sqlalchemy.orm import Session
 
 from app.core.dependencies import get_db
@@ -123,8 +121,8 @@ def download_budget_pdf(budget_id: int, db: Session = Depends(get_db)):
 
     pdf_bytes = generate_budget_pdf(budget_dict, client_dict, company=company, terms=terms)
 
-    return StreamingResponse(
-        io.BytesIO(pdf_bytes),
+    return Response(
+        pdf_bytes,
         media_type="application/pdf",
         headers={"Content-Disposition": f'attachment; filename="presupuesto_{budget.number}.pdf"'},
     )

@@ -1,6 +1,8 @@
 import logging
 import time
 
+from alembic import command
+from alembic.config import Config as AlembicConfig
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
@@ -16,7 +18,22 @@ from app.utils.seed import seed_default_data
 setup_logging()
 logger = logging.getLogger(__name__)
 
+
+def run_migrations():
+    try:
+        alembic_cfg = AlembicConfig("alembic.ini")
+        command.upgrade(alembic_cfg, "head")
+    except Exception:
+        logger.warning("Alembic upgrade failed — stamping head instead", exc_info=True)
+        try:
+            alembic_cfg = AlembicConfig("alembic.ini")
+            command.stamp(alembic_cfg, "head")
+        except Exception:
+            logger.warning("Alembic stamp also failed", exc_info=True)
+
+
 Base.metadata.create_all(bind=engine)
+run_migrations()
 seed_default_data()
 
 app = FastAPI(title=settings.app_name, version=settings.app_version)

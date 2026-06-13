@@ -2,7 +2,7 @@ services:
   backend:
     build:
       context: ./backend
-    image: backend:latest
+    image: afamar-backend:latest
     container_name: backend
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/health')"]
@@ -19,7 +19,7 @@ services:
   frontend:
     build:
       context: ./frontend
-    image: frontend:latest
+    image: afamar-frontend:latest
     container_name: frontend
     environment:
       - API_URL=${API_URL:-/api/v1}
