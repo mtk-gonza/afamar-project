@@ -68,6 +68,10 @@ export const api = {
   getSettings: () => wrap<SettingsData>(() => http.get("/settings")),
   updateSettings: (data: SettingsData) => wrap<SettingsData>(() => http.put("/settings", data)),
 
+  // PDF / Email
+  downloadBudgetPdf: (id: number) => http.get(`/budgets/${id}/pdf`, { responseType: "blob" }).then((r) => r.data),
+  sendBudgetEmail: (id: number) => wrap<{ message: string }>(() => http.post(`/budgets/${id}/send-email`)),
+
   // Reports
   getDashboard: () => wrap<DashboardStats>(() => http.get("/reports/dashboard")),
   getBudgetsByStatus: (status: string) => wrap<Budget[]>(() => http.get("/reports/budgets-by-status", { params: { status } })),

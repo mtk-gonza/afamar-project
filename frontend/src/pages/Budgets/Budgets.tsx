@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { api } from "../../api/client";
+import { useNotify } from "../../context/NotificationContext";
 import type { Budget } from "../../types";
 import styles from "./Budgets.module.css";
 
@@ -8,6 +9,7 @@ const statusLabel: Record<string, string> = { pending: "Pendiente", approved: "A
 
 export function Budgets() {
   const navigate = useNavigate();
+  const notify = useNotify();
   const [items, setItems] = useState<Budget[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -46,6 +48,31 @@ export function Budgets() {
     load();
   };
 
+  const handleDownloadPdf = async (b: Budget) => {
+    try {
+      const blob = await api.downloadBudgetPdf(b.id);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `presupuesto_${b.number}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch {
+      notify("Error al descargar PDF", "error");
+    }
+  };
+
+  const handleSendEmail = async (b: Budget) => {
+    try {
+      await api.sendBudgetEmail(b.id);
+      notify("Email enviado correctamente", "success");
+    } catch (e: any) {
+      notify(e?.response?.data?.detail || "Error al enviar email", "error");
+    }
+  };
+
   return (
     <div className={styles.budgets}>
       <div className={styles.budgets__header}>
@@ -78,6 +105,8 @@ export function Budgets() {
                 <td className={styles.budgets__actions}>
                   <button className={styles.budgets__actionBtn} onClick={() => navigate(`/budgets/${b.id}/edit`)}>Editar</button>
                   {b.status === "pending" && <button className={styles.budgets__actionBtn} onClick={() => handleApproval(b)}>Aprobar</button>}
+                  <button className={styles.budgets__actionBtn} title="Descargar PDF" onClick={() => handleDownloadPdf(b)}>PDF</button>
+                  <button className={styles.budgets__actionBtn} title="Enviar por email" onClick={() => handleSendEmail(b)}>Email</button>
                   <button className={`${styles.budgets__actionBtn} ${styles["budgets__actionBtn--danger"]}`} onClick={() => handleDelete(b.id, b.number)}>Eliminar</button>
                 </td>
               </tr>

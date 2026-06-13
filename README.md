@@ -31,7 +31,7 @@ npm --version
 ## 1. Clonar el repositorio
 
 ```bash
-git clone <url-del-repositorio>
+git clone https://github.com/mtk-gonza/afamar-project.git
 cd afamar-project
 ```
 
@@ -62,14 +62,24 @@ pip install -r requirements.txt
 
 ### 2.2 Configurar variables de entorno
 
-El archivo `.env` ya viene con valores por defecto:
-
+El archivo `.env.example` ya viene con valores por defecto:
+crear.env y rellenar con los valores que hagan falta
 ```env
+# Database
 DATABASE_URL=sqlite:///./afamar.db
+# DATABASE_URL=mysql+pymysql://user:password@localhost:3306/afamar
+# App
 APP_NAME=AFAMAR
 APP_VERSION=1.0.0
 DEBUG=true
-CORS_ORIGINS=http://localhost:5173
+# CORS
+CORS_ORIGINS=http://localhost:5173,http://localhost:3000
+# Email (SMTP)
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_USER=tu-correo@gmail.com
+SMTP_PASSWORD=contraseña-de-gmail
+SMTP_FROM=tu-correo@gmail.com
 ```
 
 > Para usar MySQL cambiar `DATABASE_URL` a:
