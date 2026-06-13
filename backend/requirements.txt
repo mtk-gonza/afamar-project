@@ -1,0 +1,18 @@
+fastapi
+uvicorn[standard]
+sqlalchemy
+alembic
+pydantic
+pydantic-settings
+python-multipart
+reportlab
+jinja2
+python-dotenv
+aiosmtplib
+email-validator
+
+# Development
+pytest
+httpx
+pytest-cov
+ruff

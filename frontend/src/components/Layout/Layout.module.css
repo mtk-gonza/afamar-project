@@ -1,0 +1,53 @@
+.layout {
+  display: flex;
+  min-height: 100vh;
+}
+
+.layout__sidebar {
+  width: 240px;
+  background: #1a1a2e;
+  color: #fff;
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.layout__logo {
+  font-size: 1.5rem;
+  font-weight: 700;
+  letter-spacing: 1px;
+}
+
+.layout__nav {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.layout__link {
+  color: #a0a0b8;
+  text-decoration: none;
+  padding: 0.6rem 0.8rem;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  transition: background 0.2s, color 0.2s;
+}
+
+.layout__link:hover {
+  background: rgba(255, 255, 255, 0.06);
+  color: #fff;
+}
+
+.layout__link--active {
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+  font-weight: 600;
+}
+
+.layout__content {
+  flex: 1;
+  padding: 2rem;
+  background: #f5f5f5;
+  overflow-y: auto;
+}

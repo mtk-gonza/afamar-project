@@ -1,0 +1,12 @@
+.budgets__header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; }
+.budgets__title { font-size: 1.5rem; color: #1a1a2e; }
+.budgets__addBtn { background: #1a1a2e; color: #fff; padding: 0.5rem 1rem; border-radius: 6px; text-decoration: none; font-size: 0.85rem; font-weight: 500; }
+.budgets__table { width: 100%; border-collapse: collapse; background: #fff; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+.budgets__table th, .budgets__table td { text-align: left; padding: 0.75rem 1rem; font-size: 0.9rem; }
+.budgets__table th { background: #f0f0f0; font-weight: 600; color: #333; }
+.budgets__table td { border-top: 1px solid #eee; }
+.budgets__actions { display: flex; gap: 0.4rem; }
+.budgets__actionBtn { padding: 0.3rem 0.65rem; border: 1px solid #ccc; border-radius: 4px; background: #fff; font-size: 0.8rem; cursor: pointer; }
+.budgets__actionBtn--danger { color: #c0392b; border-color: #c0392b; }
+.budgets__state { text-align: center; padding: 3rem 1rem; color: #666; font-size: 0.95rem; background: #fff; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+.budgets__state button { margin-top: 0.75rem; }

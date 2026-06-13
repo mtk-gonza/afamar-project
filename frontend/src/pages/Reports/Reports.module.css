@@ -1,0 +1,7 @@
+.reports__title { font-size: 1.5rem; margin-bottom: 1.5rem; color: #1a1a2e; }
+.reports__section { background: #fff; border-radius: 8px; padding: 1.25rem; margin-bottom: 1.5rem; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+.reports__sectionTitle { font-size: 1rem; margin-bottom: 1rem; color: #333; }
+.reports__select { padding: 0.45rem 0.7rem; border: 1px solid #ccc; border-radius: 6px; font-size: 0.85rem; margin-bottom: 0.75rem; }
+.reports__table { width: 100%; border-collapse: collapse; }
+.reports__table th, .reports__table td { text-align: left; padding: 0.6rem 0.8rem; font-size: 0.85rem; border-bottom: 1px solid #eee; }
+.reports__table th { background: #f5f5f5; font-weight: 600; color: #333; }

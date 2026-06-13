@@ -1,0 +1,21 @@
+.materials__header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; }
+.materials__title { font-size: 1.5rem; color: #1a1a2e; }
+.materials__addBtn { background: #1a1a2e; color: #fff; padding: 0.5rem 1rem; border-radius: 6px; text-decoration: none; font-size: 0.85rem; font-weight: 500; white-space: nowrap; }
+.materials__adminBtn { background: #fff; color: #1a1a2e; border: 1px solid #1a1a2e; padding: 0.5rem 1rem; border-radius: 6px; font-size: 0.85rem; cursor: pointer; white-space: nowrap; }
+.materials__admin { background: #fff; border-radius: 8px; padding: 1rem; margin-bottom: 1.5rem; box-shadow: 0 1px 3px rgba(0,0,0,0.08); display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; }
+.materials__adminCol h4 { font-size: 0.9rem; margin-bottom: 0.5rem; color: #1a1a2e; }
+.materials__adminRow { display: flex; gap: 0.4rem; margin-bottom: 0.5rem; }
+.materials__adminInput { flex: 1; padding: 0.4rem 0.6rem; border: 1px solid #ccc; border-radius: 4px; font-size: 0.85rem; }
+.materials__adminAdd { background: #27ae60; color: #fff; border: none; border-radius: 4px; padding: 0.4rem 0.7rem; cursor: pointer; font-size: 1rem; }
+.materials__adminList { list-style: none; display: flex; flex-wrap: wrap; gap: 0.4rem; }
+.materials__adminList li { background: #f0f0f0; border-radius: 4px; padding: 0.25rem 0.5rem; font-size: 0.8rem; display: flex; align-items: center; gap: 0.4rem; }
+.materials__adminRemove { background: none; border: none; color: #c0392b; cursor: pointer; font-size: 0.75rem; padding: 0; }
+.materials__table { width: 100%; border-collapse: collapse; background: #fff; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+.materials__table th, .materials__table td { text-align: left; padding: 0.75rem 1rem; font-size: 0.9rem; }
+.materials__table th { background: #f0f0f0; font-weight: 600; color: #333; }
+.materials__table td { border-top: 1px solid #eee; }
+.materials__actions { display: flex; gap: 0.4rem; }
+.materials__actionBtn { padding: 0.3rem 0.65rem; border: 1px solid #ccc; border-radius: 4px; background: #fff; font-size: 0.8rem; cursor: pointer; }
+.materials__actionBtn--danger { color: #c0392b; border-color: #c0392b; }
+.materials__state { text-align: center; padding: 3rem 1rem; color: #666; font-size: 0.95rem; background: #fff; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+.materials__state button { margin-top: 0.75rem; }

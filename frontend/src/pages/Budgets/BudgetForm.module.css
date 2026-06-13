@@ -1,0 +1,20 @@
+.budgetForm { max-width: 800px; }
+.budgetForm__title { font-size: 1.5rem; margin-bottom: 1.5rem; color: #1a1a2e; }
+.budgetForm__form { display: flex; flex-direction: column; gap: 1.5rem; }
+.budgetForm__fieldset { border: 1px solid #ddd; border-radius: 8px; padding: 1rem; background: #fff; }
+.budgetForm__fieldset legend { font-weight: 600; font-size: 0.9rem; padding: 0 0.4rem; color: #1a1a2e; }
+.budgetForm__grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
+.budgetForm__label { display: flex; flex-direction: column; gap: 0.25rem; font-size: 0.8rem; font-weight: 500; color: #333; }
+.budgetForm__input, .budgetForm__textarea { padding: 0.5rem 0.7rem; border: 1px solid #ccc; border-radius: 6px; font-size: 0.85rem; font-family: inherit; }
+.budgetForm__textarea { min-height: 70px; resize: vertical; width: 100%; }
+.budgetForm__itemsHeader { display: grid; grid-template-columns: 2fr 0.5fr 0.7fr 0.7fr 30px; gap: 0.5rem; font-size: 0.75rem; font-weight: 600; color: #666; margin-bottom: 0.4rem; }
+.budgetForm__itemRow { display: grid; grid-template-columns: 2fr 0.5fr 0.7fr 0.7fr 30px; gap: 0.5rem; align-items: center; margin-bottom: 0.4rem; }
+.budgetForm__itemTotal { font-size: 0.85rem; font-weight: 600; text-align: right; }
+.budgetForm__removeItem { background: none; border: none; color: #c0392b; font-size: 1rem; cursor: pointer; padding: 0; }
+.budgetForm__addItem { background: none; border: 1px dashed #aaa; border-radius: 6px; padding: 0.4rem; font-size: 0.8rem; cursor: pointer; width: 100%; color: #555; margin-top: 0.3rem; }
+.budgetForm__totals { display: flex; justify-content: flex-end; gap: 2rem; margin-top: 0.75rem; font-weight: 700; font-size: 0.95rem; }
+.budgetForm__actions { display: flex; gap: 0.75rem; }
+.budgetForm__submit { background: #1a1a2e; color: #fff; border: none; padding: 0.6rem 1.5rem; border-radius: 6px; font-size: 0.9rem; cursor: pointer; }
+.budgetForm__submit:disabled { opacity: 0.6; }
+.budgetForm__cancel { background: #eee; color: #333; border: none; padding: 0.6rem 1.5rem; border-radius: 6px; font-size: 0.9rem; cursor: pointer; }
+.budgetForm__error { background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; padding: 2rem; text-align: center; color: #991b1b; }

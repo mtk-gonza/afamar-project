@@ -1,0 +1,14 @@
+.poolStock__header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; }
+.poolStock__title { font-size: 1.5rem; color: #1a1a2e; }
+.poolStock__toolbar { display: flex; gap: 0.5rem; align-items: center; }
+.poolStock__search { padding: 0.5rem 0.8rem; border: 1px solid #ccc; border-radius: 6px; font-size: 0.9rem; width: 220px; }
+.poolStock__addBtn { background: #1a1a2e; color: #fff; padding: 0.5rem 1rem; border-radius: 6px; text-decoration: none; font-size: 0.85rem; font-weight: 500; white-space: nowrap; }
+.poolStock__table { width: 100%; border-collapse: collapse; background: #fff; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+.poolStock__table th, .poolStock__table td { text-align: left; padding: 0.75rem 1rem; font-size: 0.9rem; }
+.poolStock__table th { background: #f0f0f0; font-weight: 600; color: #333; }
+.poolStock__table td { border-top: 1px solid #eee; }
+.poolStock__actions { display: flex; gap: 0.4rem; }
+.poolStock__actionBtn { padding: 0.3rem 0.65rem; border: 1px solid #ccc; border-radius: 4px; background: #fff; font-size: 0.8rem; cursor: pointer; }
+.poolStock__actionBtn--danger { color: #c0392b; border-color: #c0392b; }
+.poolStock__state { text-align: center; padding: 3rem 1rem; color: #666; font-size: 0.95rem; background: #fff; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+.poolStock__state button { margin-top: 0.75rem; }

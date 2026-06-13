@@ -1,0 +1,29 @@
+# Backend - Python / FastAPI
+backend/__pycache__/
+backend/**/__pycache__/
+backend/*.py[cod]
+backend/*.egg-info/
+backend/*.egg
+backend/.venv/
+backend/venv/
+backend/dist/
+backend/pdfs/
+
+# Frontend - Node / Vite / React
+frontend/node_modules/
+frontend/dist/
+frontend/build/
+frontend/*.tsbuildinfo
+frontend/npm-debug.log*
+
+# Environment
+.env
+!.env.example
+
+# IDE / OS
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db

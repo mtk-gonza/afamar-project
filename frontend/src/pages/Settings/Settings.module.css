@@ -1,0 +1,20 @@
+.settings__title { font-size: 1.5rem; margin-bottom: 1.5rem; color: #1a1a2e; }
+.settings__form { display: flex; flex-direction: column; gap: 1.5rem; max-width: 700px; }
+.settings__fieldset { border: 1px solid #ddd; border-radius: 8px; padding: 1rem; background: #fff; }
+.settings__fieldset legend { font-weight: 600; font-size: 0.9rem; padding: 0 0.4rem; color: #1a1a2e; }
+.settings__grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
+.settings__label { display: flex; flex-direction: column; gap: 0.25rem; font-size: 0.8rem; font-weight: 500; color: #333; }
+.settings__input, .settings__textarea { padding: 0.5rem 0.7rem; border: 1px solid #ccc; border-radius: 6px; font-size: 0.85rem; font-family: inherit; }
+.settings__textarea { min-height: 70px; resize: vertical; }
+.settings__optionRow { display: flex; gap: 0.4rem; margin-bottom: 0.5rem; }
+.settings__optionRow .settings__input { flex: 1; }
+.settings__addBtn { background: #27ae60; color: #fff; border: none; border-radius: 4px; padding: 0.4rem 0.7rem; cursor: pointer; font-size: 1rem; }
+.settings__tags { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+.settings__tag { background: #f0f0f0; border-radius: 4px; padding: 0.3rem 0.6rem; font-size: 0.8rem; display: flex; align-items: center; gap: 0.4rem; }
+.settings__tagRemove { background: none; border: none; color: #c0392b; cursor: pointer; font-size: 0.75rem; padding: 0; }
+.settings__tabs { display: flex; gap: 0; margin-bottom: 1.5rem; border-bottom: 2px solid #ddd; }
+.settings__tab { background: none; border: none; padding: 0.6rem 1.2rem; font-size: 0.9rem; cursor: pointer; color: #666; border-bottom: 2px solid transparent; margin-bottom: -2px; font-family: inherit; }
+.settings__tab--active { color: #1a1a2e; font-weight: 600; border-bottom-color: #1a1a2e; }
+.settings__actions { display: flex; gap: 0.75rem; margin-top: 0.5rem; }
+.settings__submit { background: #1a1a2e; color: #fff; border: none; padding: 0.6rem 1.5rem; border-radius: 6px; font-size: 0.9rem; cursor: pointer; }
+.settings__submit:active { opacity: 0.85; }
