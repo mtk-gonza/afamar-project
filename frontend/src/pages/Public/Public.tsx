@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import styles from "./Public.module.css";
 import { Container } from "../../components/ui/Container";
+import { Modal } from "../../components/ui/Modal";
 
 import slider1 from "../../assets/slider/1.jpg";
 import slider2 from "../../assets/slider/2.jpg";
@@ -77,6 +78,7 @@ const portfolioItems = [
 
 export function Public() {
   const [activeSlide, setActiveSlide] = useState(0);
+  const [modalImg, setModalImg] = useState<string | null>(null);
 
   const goTo = (i: number) => {
     setActiveSlide(i);
@@ -219,11 +221,23 @@ export function Public() {
         <p className={styles.section__subtitle}>Algunos de nuestros trabajos realizados</p>
         <div className={styles.portfolio__grid}>
           {portfolioItems.map((item, i) => (
-            <div key={i} className={styles.portfolio__card} style={{ backgroundImage: `url(${item.image})` }}>
+            <div
+              key={i}
+              className={styles.portfolio__card}
+              style={{ backgroundImage: `url(${item.image})` }}
+              onClick={() => setModalImg(item.image)}
+              role="button"
+              tabIndex={0}
+              onKeyDown={(e) => { if (e.key === "Enter") setModalImg(item.image); }}
+            >
               <div className={styles.portfolio__overlay} />
             </div>
           ))}
         </div>
+
+        <Modal open={!!modalImg} onClose={() => setModalImg(null)} maxWidth="900px">
+          <img src={modalImg ?? ""} alt="Producto" style={{ width: "100%", height: "auto", display: "block", borderRadius: "12px" }} />
+        </Modal>
         </Container>
       </section>
 
