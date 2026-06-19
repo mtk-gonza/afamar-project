@@ -2,22 +2,22 @@ from datetime import datetime
 
 from pydantic import BaseModel
 
+from app.schemas.base import BaseResponse
+
 
 class StockMovementCreate(BaseModel):
-    type: str  # entry, exit
+    type: str
     quantity: int
     notes: str | None = None
 
 
-class StockMovementResponse(BaseModel):
+class StockMovementResponse(BaseResponse):
     id: int
     pool_id: int
     type: str
     quantity: int
     notes: str | None = None
     created_at: datetime
-
-    model_config = {"from_attributes": True}
 
 
 class PoolStockBase(BaseModel):
@@ -26,6 +26,8 @@ class PoolStockBase(BaseModel):
     description: str | None = None
     material: str | None = None
     quantity: int = 0
+    price: float = 0.0
+    price_usd: float = 0.0
 
 
 class PoolStockCreate(PoolStockBase):
@@ -38,12 +40,12 @@ class PoolStockUpdate(BaseModel):
     description: str | None = None
     material: str | None = None
     quantity: int | None = None
+    price: float | None = None
+    price_usd: float | None = None
 
 
-class PoolStockResponse(PoolStockBase):
+class PoolStockResponse(PoolStockBase, BaseResponse):
     id: int
     created_at: datetime
     updated_at: datetime
     movements: list[StockMovementResponse] = []
-
-    model_config = {"from_attributes": True}

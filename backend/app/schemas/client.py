@@ -2,6 +2,8 @@ from datetime import datetime
 
 from pydantic import BaseModel
 
+from app.schemas.base import BaseResponse
+
 
 class ClientBase(BaseModel):
     name: str
@@ -23,10 +25,8 @@ class ClientUpdate(BaseModel):
     notes: str | None = None
 
 
-class ClientResponse(ClientBase):
+class ClientResponse(ClientBase, BaseResponse):
     id: int
     total_purchased: float
     created_at: datetime
     updated_at: datetime
-
-    model_config = {"from_attributes": True}

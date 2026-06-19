@@ -85,10 +85,26 @@ def delete_category(category_id: int, db: Session = Depends(get_db)):
     repo.delete(cat)
 
 
+# ── Price History ──────────────────────────────────────
+
+@router.get("/{material_id}/price-history")
+def get_price_history(material_id: int, db: Session = Depends(get_db)):
+    service = MaterialService(db)
+    return success(service.get_price_history(material_id))
+
+
 # ── Materials ───────────────────────────────────────────
 
 @router.get("")
-def list_materials(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
+def list_materials(
+    skip: int = 0,
+    limit: int = 100,
+    category_id: int | None = None,
+    db: Session = Depends(get_db),
+):
+    if category_id:
+        service = MaterialService(db)
+        return success(service.get_by_category(category_id))
     service = MaterialService(db)
     query = service.repo.db.query(service.repo.model)
     page = paginate(db, query, skip, limit)

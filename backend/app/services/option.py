@@ -1,34 +1,30 @@
-from typing import List, Optional
+from typing import Any
 
 from sqlalchemy.orm import Session
 
-from app.models.options import AppOption
+from app.repositories.option import OptionRepository
 
 
 class AppOptionService:
     def __init__(self, db: Session):
-        self.db = db
+        self.repo = OptionRepository(db)
 
-    def get_all(self) -> List[AppOption]:
-        return self.db.query(AppOption).order_by(AppOption.category, AppOption.sort_order).all()
+    def get_all(self):
+        return self.repo.get_all()
 
-    def get_by_category(self, category: str) -> List[AppOption]:
-        return self.db.query(AppOption).filter(AppOption.category == category).order_by(AppOption.sort_order).all()
+    def get_by_category(self, category: str):
+        return self.repo.get_by_category(category)
 
-    def get_by_id(self, option_id: int) -> Optional[AppOption]:
-        return self.db.query(AppOption).filter(AppOption.id == option_id).first()
+    def get_by_id(self, option_id: int):
+        return self.repo.get_by_id(option_id)
 
-    def create(self, data: dict) -> AppOption:
-        opt = AppOption(**data)
-        self.db.add(opt)
-        self.db.commit()
-        self.db.refresh(opt)
-        return opt
+    def create(self, data: dict[str, Any]):
+        return self.repo.create(data, commit=True)
 
     def delete(self, option_id: int) -> bool:
-        opt = self.get_by_id(option_id)
+        opt = self.repo.get_by_id(option_id)
         if not opt:
             return False
-        self.db.delete(opt)
-        self.db.commit()
+        self.repo.delete(opt)
+        self.repo.db.commit()
         return True

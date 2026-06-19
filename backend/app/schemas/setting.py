@@ -6,6 +6,7 @@ class SettingUpdate(BaseModel):
     company_address: str = ""
     company_phone: str = ""
     company_email: str = ""
+    company_logo: str = ""
     pdf_footer: str = ""
     budget_terms: str = ""
     delivery_terms: str = ""

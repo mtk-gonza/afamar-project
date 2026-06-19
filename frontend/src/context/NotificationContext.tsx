@@ -1,4 +1,5 @@
 import { createContext, useCallback, useContext, useState } from "react";
+import styles from "./NotificationContext.module.css";
 
 type ToastType = "success" | "error" | "info";
 
@@ -28,23 +29,18 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     }, 4000);
   }, []);
 
+  const typeClass = (t: ToastType) => {
+    if (t === "success") return styles["toast--success"];
+    if (t === "error") return styles["toast--error"];
+    return styles["toast--info"];
+  };
+
   return (
     <NotificationContext.Provider value={{ toasts, notify }}>
       {children}
-      <div style={{ position: "fixed", top: 16, right: 16, zIndex: 9999, display: "flex", flexDirection: "column", gap: 8 }}>
+      <div className={styles.container}>
         {toasts.map((t) => (
-          <div
-            key={t.id}
-            style={{
-              padding: "10px 18px",
-              borderRadius: 8,
-              color: "#fff",
-              fontSize: 14,
-              fontWeight: 500,
-              boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
-              background: t.type === "success" ? "#27ae60" : t.type === "error" ? "#e74c3c" : "#2980b9",
-            }}
-          >
+          <div key={t.id} className={`${styles.toast} ${typeClass(t.type)}`}>
             {t.message}
           </div>
         ))}

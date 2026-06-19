@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { api } from "../../api/client";
+import { FormActions } from "../../components/ui/FormActions";
 import type { PoolStock } from "../../types";
 import styles from "./PoolStockForm.module.css";
 
@@ -48,10 +49,7 @@ export function PoolStockForm() {
         <label className={styles.poolStockForm__label}>Descripción<textarea className={styles.poolStockForm__textarea} name="description" value={form.description} onChange={handleChange} /></label>
         <label className={styles.poolStockForm__label}>Material<input className={styles.poolStockForm__input} name="material" value={form.material} onChange={handleChange} /></label>
         <label className={styles.poolStockForm__label}>Cantidad<input className={styles.poolStockForm__input} name="quantity" type="number" value={form.quantity} onChange={handleChange} /></label>
-        <div className={styles.poolStockForm__actions}>
-          <button className={styles.poolStockForm__submit} type="submit" disabled={loading}>{loading ? "Guardando..." : "Guardar"}</button>
-          <button className={styles.poolStockForm__cancel} type="button" onClick={() => navigate("/pool-stock")}>Cancelar</button>
-        </div>
+        <FormActions loading={loading} />
       </form>
     </div>
   );

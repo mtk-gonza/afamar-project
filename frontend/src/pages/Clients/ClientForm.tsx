@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { api } from "../../api/client";
+import { FormActions } from "../../components/ui/FormActions";
 import type { Client } from "../../types";
 import styles from "./ClientForm.module.css";
 
@@ -10,11 +11,7 @@ export function ClientForm() {
   const isEdit = Boolean(id);
 
   const [form, setForm] = useState({
-    name: "",
-    phone: "",
-    email: "",
-    address: "",
-    notes: "",
+    name: "", phone: "", email: "", address: "", notes: "",
   });
   const [loading, setLoading] = useState(false);
 
@@ -69,14 +66,7 @@ export function ClientForm() {
           Observaciones
           <textarea className={styles.clientForm__textarea} name="notes" value={form.notes} onChange={handleChange} />
         </label>
-        <div className={styles.clientForm__actions}>
-          <button className={styles.clientForm__submit} type="submit" disabled={loading}>
-            {loading ? "Guardando..." : "Guardar"}
-          </button>
-          <button className={styles.clientForm__cancel} type="button" onClick={() => navigate("/clients")}>
-            Cancelar
-          </button>
-        </div>
+        <FormActions loading={loading} />
       </form>
     </div>
   );

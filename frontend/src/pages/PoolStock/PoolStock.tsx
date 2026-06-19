@@ -1,11 +1,19 @@
 import { useCallback, useEffect, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { api } from "../../api/client";
+import { useConfirm } from "../../components/ui/useConfirm";
+import { PageHeader } from "../../components/ui/PageHeader";
+import { LoadingSpinner } from "../../components/ui/LoadingSpinner";
+import { ErrorBlock } from "../../components/ui/ErrorBlock";
+import { EmptyState } from "../../components/ui/EmptyState";
+import { SearchInput } from "../../components/ui/SearchInput";
+import { TableActions } from "../../components/ui/TableActions";
 import type { PoolStock as PoolStockType } from "../../types";
 import styles from "./PoolStock.module.css";
 
 export function PoolStock() {
   const navigate = useNavigate();
+  const { confirm, dialog } = useConfirm();
   const [items, setItems] = useState<PoolStockType[]>([]);
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
@@ -27,29 +35,22 @@ export function PoolStock() {
   useEffect(() => { load(search); }, [search, load]);
 
   const handleDelete = async (id: number, brand: string) => {
-    if (!confirm(`¿Eliminar "${brand}" del stock?`)) return;
+    if (!(await confirm(`¿Eliminar "${brand}" del stock?`, "Eliminar", true))) return;
     await api.deletePoolStock(id);
     load(search);
   };
 
   return (
     <div className={styles.poolStock}>
-      <div className={styles.poolStock__header}>
-        <h2 className={styles.poolStock__title}>Stock de Piletas</h2>
-        <div className={styles.poolStock__toolbar}>
-          <input className={styles.poolStock__search} type="text" placeholder="Buscar marca o modelo..." value={search} onChange={(e) => setSearch(e.target.value)} />
-          <Link to="/pool-stock/new" className={styles.poolStock__addBtn}>+ Nuevo</Link>
-        </div>
-      </div>
+      <PageHeader title="Stock de Piletas" addLink="/pool-stock/new">
+        <SearchInput value={search} onChange={setSearch} placeholder="Buscar marca o modelo..." />
+      </PageHeader>
 
-      {loading && <div className={styles.poolStock__state}>Cargando...</div>}
-      {error && (
-        <div className={styles.poolStock__state}>
-          <p>{error}</p>
-          <button className={styles.poolStock__addBtn} onClick={() => load(search)}>Reintentar</button>
-        </div>
+      {loading && <LoadingSpinner />}
+      {error && <ErrorBlock message={error} onRetry={() => load(search)} />}
+      {!loading && !error && items.length === 0 && (
+        <EmptyState message={search ? "Sin resultados." : "No hay stock aún."} />
       )}
-      {!loading && !error && items.length === 0 && <div className={styles.poolStock__state}>{search ? "Sin resultados." : "No hay stock aún."}</div>}
 
       {!loading && !error && items.length > 0 && (
         <table className={styles.poolStock__table}>
@@ -63,15 +64,13 @@ export function PoolStock() {
                 <td>{p.model}</td>
                 <td>{p.material}</td>
                 <td>{p.quantity}</td>
-                <td className={styles.poolStock__actions}>
-                  <button className={styles.poolStock__actionBtn} onClick={() => navigate(`/pool-stock/${p.id}/edit`)}>Editar</button>
-                  <button className={`${styles.poolStock__actionBtn} ${styles["poolStock__actionBtn--danger"]}`} onClick={() => handleDelete(p.id, p.brand)}>Eliminar</button>
-                </td>
+                <TableActions onEdit={() => navigate(`/pool-stock/${p.id}/edit`)} onDelete={() => handleDelete(p.id, p.brand)} />
               </tr>
             ))}
           </tbody>
         </table>
       )}
+      {dialog}
     </div>
   );
 }

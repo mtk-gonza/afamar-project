@@ -1,5 +1,7 @@
 from pydantic import BaseModel
 
+from app.schemas.base import BaseResponse
+
 
 class AppOptionCreate(BaseModel):
     category: str
@@ -7,10 +9,8 @@ class AppOptionCreate(BaseModel):
     sort_order: int = 0
 
 
-class AppOptionResponse(BaseModel):
+class AppOptionResponse(BaseResponse):
     id: int
     category: str
     value: str
     sort_order: int
-
-    model_config = {"from_attributes": True}

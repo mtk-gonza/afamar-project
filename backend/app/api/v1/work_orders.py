@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 
 from app.core.dependencies import get_db
@@ -13,11 +13,28 @@ router = APIRouter()
 
 
 @router.get("")
-def list_work_orders(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
+def list_work_orders(
+    skip: int = 0,
+    limit: int = 100,
+    status: str | None = None,
+    client_id: int | None = None,
+    db: Session = Depends(get_db),
+):
     service = WorkOrderService(db)
     query = service.repo.db.query(service.repo.model)
+    if status:
+        query = query.filter(service.repo.model.status == status)
+    if client_id:
+        query = query.filter(service.repo.model.client_id == client_id)
+    query = query.order_by(service.repo.model.created_at.desc())
     page = paginate(db, query, skip, limit)
     return success(page.items, page.pagination)
+
+
+@router.get("/search")
+def search_work_orders(q: str = Query(min_length=1), db: Session = Depends(get_db)):
+    service = WorkOrderService(db)
+    return success(service.search(q))
 
 
 @router.get("/{order_id}")

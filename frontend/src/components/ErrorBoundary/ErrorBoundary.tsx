@@ -1,24 +1,25 @@
-import { Component } from "react";
+import { Component, type ReactNode } from "react";
+import styles from "./ErrorBoundary.module.css";
 
-interface Props { children: React.ReactNode }
-interface State { hasError: boolean; error?: Error }
+interface Props { children: ReactNode; }
+interface State { hasError: boolean; error: Error | null; }
 
 export class ErrorBoundary extends Component<Props, State> {
-  state: State = { hasError: false };
+  state: State = { hasError: false, error: null };
 
-  static getDerivedStateFromError(error: Error): State {
+  static getDerivedStateFromError(error: Error) {
     return { hasError: true, error };
   }
 
   render() {
     if (this.state.hasError) {
       return (
-        <div style={{ padding: "2rem", textAlign: "center" }}>
+        <div className={styles.errorBoundary}>
           <h2>Algo salió mal</h2>
-          <p style={{ color: "#888", marginTop: 8 }}>{this.state.error?.message}</p>
+          <p className={styles.errorBoundary__message}>{this.state.error?.message}</p>
           <button
-            onClick={() => { this.setState({ hasError: false }); window.location.reload(); }}
-            style={{ marginTop: 12, padding: "8px 20px", background: "#1a1a2e", color: "#fff", border: "none", borderRadius: 6, cursor: "pointer" }}
+            className={styles.errorBoundary__retry}
+            onClick={() => { this.setState({ hasError: false, error: null }); window.location.reload(); }}
           >
             Recargar
           </button>

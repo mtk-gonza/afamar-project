@@ -1,13 +1,19 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { api } from "../../api/client";
+import { useConfirm } from "../../components/ui/useConfirm";
+import { PageHeader } from "../../components/ui/PageHeader";
+import { LoadingSpinner } from "../../components/ui/LoadingSpinner";
+import { ErrorBlock } from "../../components/ui/ErrorBlock";
+import { EmptyState } from "../../components/ui/EmptyState";
+import { StatusBadge } from "../../components/ui/StatusBadge";
+import { TableActions } from "../../components/ui/TableActions";
 import type { WorkOrder } from "../../types";
 import styles from "./WorkOrders.module.css";
 
-const statusLabel: Record<string, string> = { budgeted: "Presupuestado", in_production: "En Producción", finished: "Finalizado" };
-
 export function WorkOrders() {
   const navigate = useNavigate();
+  const { confirm, dialog } = useConfirm();
   const [items, setItems] = useState<WorkOrder[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -28,7 +34,7 @@ export function WorkOrders() {
   useEffect(() => { load(); }, [load]);
 
   const handleDelete = async (id: number, num: string) => {
-    if (!confirm(`¿Eliminar orden ${num}?`)) return;
+    if (!(await confirm(`¿Eliminar orden ${num}?`, "Eliminar", true))) return;
     await api.deleteWorkOrder(id);
     load();
   };
@@ -41,58 +47,50 @@ export function WorkOrders() {
 
   return (
     <div className={styles.workOrders}>
-      <div className={styles.workOrders__header}>
-        <h2 className={styles.workOrders__title}>Órdenes de Trabajo</h2>
-        <div className={styles.workOrders__toolbar}>
-          <div className={styles.workOrders__tabs}>
-            <button
-              type="button"
-              className={`${styles.workOrders__tab} ${view === "table" ? styles["workOrders__tab--active"] : ""}`}
-              onClick={() => setView("table")}
-            >
-              Tabla
-            </button>
-            <button
-              type="button"
-              className={`${styles.workOrders__tab} ${view === "kanban" ? styles["workOrders__tab--active"] : ""}`}
-              onClick={() => setView("kanban")}
-            >
-              Kanban
-            </button>
-          </div>
-          <Link to="/work-orders/new" className={styles.workOrders__addBtn}>+ Nueva</Link>
+      <PageHeader title="Órdenes de Trabajo">
+        <div className={styles.workOrders__tabs}>
+          <button
+            type="button"
+            className={`${styles.workOrders__tab} ${view === "table" ? styles["workOrders__tab--active"] : ""}`}
+            onClick={() => setView("table")}
+          >
+            Tabla
+          </button>
+          <button
+            type="button"
+            className={`${styles.workOrders__tab} ${view === "kanban" ? styles["workOrders__tab--active"] : ""}`}
+            onClick={() => setView("kanban")}
+          >
+            Kanban
+          </button>
         </div>
-      </div>
+        <Link to="/work-orders/new" className={styles.workOrders__addBtn}>+ Nueva</Link>
+      </PageHeader>
 
-      {loading && <div className={styles.workOrders__state}>Cargando...</div>}
-      {error && (
-        <div className={styles.workOrders__state}>
-          <p>{error}</p>
-          <button className={styles.workOrders__addBtn} onClick={load}>Reintentar</button>
-        </div>
-      )}
+      {loading && <LoadingSpinner />}
+      {error && <ErrorBlock message={error} onRetry={load} />}
 
       {!loading && !error && view === "table" && items.length === 0 && (
-        <div className={styles.workOrders__state}>No hay órdenes de trabajo aún.</div>
+        <EmptyState message="No hay órdenes de trabajo aún." />
       )}
 
       {!loading && !error && view === "table" && items.length > 0 && (
         <table className={styles.workOrders__table}>
           <thead>
-            <tr><th>Número</th><th>Cliente</th><th>Estado</th><th>Prioridad</th><th>Fecha</th><th>Acciones</th></tr>
+            <tr><th>Número</th><th>Cliente</th><th>Estado</th><th>Prioridad</th><th>Total ARS</th><th>Total USD</th><th>Saldo</th><th>Entrega</th><th>Acciones</th></tr>
           </thead>
           <tbody>
             {items.map((o) => (
               <tr key={o.id}>
                 <td>{o.number}</td>
                 <td>{o.client_id}</td>
-                <td>{statusLabel[o.status] || o.status}</td>
+                <td><StatusBadge status={o.status} /></td>
                 <td>{o.priority === "urgent" ? "Urgente" : "Normal"}</td>
-                <td>{new Date(o.created_at).toLocaleDateString()}</td>
-                <td className={styles.workOrders__actions}>
-                  <button className={styles.workOrders__actionBtn} onClick={() => navigate(`/work-orders/${o.id}/edit`)}>Editar</button>
-                  <button className={`${styles.workOrders__actionBtn} ${styles["workOrders__actionBtn--danger"]}`} onClick={() => handleDelete(o.id, o.number)}>Eliminar</button>
-                </td>
+                <td>$ {o.total.toFixed(2)}</td>
+                <td>{o.total_usd > 0 ? `US$ ${o.total_usd.toFixed(2)}` : "-"}</td>
+                <td>{o.balance_due > 0 ? `$ ${o.balance_due.toFixed(2)}` : "Pagado"}</td>
+                <td>{o.delivery_date ? new Date(o.delivery_date).toLocaleDateString() : "-"}</td>
+                <TableActions onEdit={() => navigate(`/work-orders/${o.id}/edit`)} onDelete={() => handleDelete(o.id, o.number)} />
               </tr>
             ))}
           </tbody>
@@ -114,7 +112,9 @@ export function WorkOrders() {
                   >
                     <strong>{o.number}</strong>
                     <span>Cliente: {o.client_id}</span>
+                    <span>{o.material || "Sin material"}</span>
                     <span>{o.delivery_date ? `Entrega: ${new Date(o.delivery_date).toLocaleDateString()}` : "Sin fecha"}</span>
+                    <span>$ {o.total.toFixed(2)}</span>
                     {o.priority === "urgent" && <span className={styles.workOrders__urgentBadge}>Urgente</span>}
                   </div>
                 ))}
@@ -122,6 +122,7 @@ export function WorkOrders() {
           ))}
         </div>
       )}
+      {dialog}
     </div>
   );
 }

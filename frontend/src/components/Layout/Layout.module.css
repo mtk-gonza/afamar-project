@@ -7,31 +7,95 @@
   width: 240px;
   background: #1a1a2e;
   color: #fff;
-  padding: 1.5rem;
+  padding: 1rem;
   display: flex;
   flex-direction: column;
-  gap: 2rem;
+  gap: 0.5rem;
+  transition: width 0.2s;
+  overflow: hidden;
+}
+
+.layout__sidebar--collapsed {
+  width: 56px;
+  padding: 1rem 0.5rem;
+}
+
+.layout__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
 }
 
 .layout__logo {
-  font-size: 1.5rem;
+  font-size: 1.3rem;
   font-weight: 700;
   letter-spacing: 1px;
+  white-space: nowrap;
+  margin: 0;
+}
+
+.layout__logoSmall {
+  font-size: 1.3rem;
+  font-weight: 700;
+  margin: 0 auto;
+}
+
+.layout__logoImg {
+  height: 32px;
+  max-width: 140px;
+  object-fit: contain;
+}
+
+.layout__toggle {
+  background: rgba(255, 255, 255, 0.1);
+  border: none;
+  color: #a0a0b8;
+  font-size: 1rem;
+  cursor: pointer;
+  padding: 0.15rem 0.4rem;
+  border-radius: 4px;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.layout__toggle:hover {
+  background: rgba(255, 255, 255, 0.2);
+  color: #fff;
 }
 
 .layout__nav {
   display: flex;
   flex-direction: column;
-  gap: 0.25rem;
+  gap: 1rem;
+}
+
+.layout__navGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.layout__navGroupLabel {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: #666;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  padding: 0.25rem 0.6rem 0.15rem;
 }
 
 .layout__link {
   color: #a0a0b8;
   text-decoration: none;
-  padding: 0.6rem 0.8rem;
+  padding: 0.5rem 0.8rem;
   border-radius: 6px;
-  font-size: 0.9rem;
+  font-size: 0.85rem;
   transition: background 0.2s, color 0.2s;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .layout__link:hover {

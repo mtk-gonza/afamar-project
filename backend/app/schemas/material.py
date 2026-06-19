@@ -2,16 +2,16 @@ from datetime import datetime
 
 from pydantic import BaseModel
 
+from app.schemas.base import BaseResponse
+
 
 class MaterialCategoryCreate(BaseModel):
     name: str
 
 
-class MaterialCategoryResponse(BaseModel):
+class MaterialCategoryResponse(BaseResponse):
     id: int
     name: str
-
-    model_config = {"from_attributes": True}
 
 
 class MaterialColorCreate(BaseModel):
@@ -19,23 +19,19 @@ class MaterialColorCreate(BaseModel):
     category_id: int | None = None
 
 
-class MaterialColorResponse(BaseModel):
+class MaterialColorResponse(BaseResponse):
     id: int
     name: str
     category_id: int | None = None
-
-    model_config = {"from_attributes": True}
 
 
 class MaterialThicknessCreate(BaseModel):
     name: str
 
 
-class MaterialThicknessResponse(BaseModel):
+class MaterialThicknessResponse(BaseResponse):
     id: int
     name: str
-
-    model_config = {"from_attributes": True}
 
 
 class MaterialBase(BaseModel):
@@ -44,6 +40,10 @@ class MaterialBase(BaseModel):
     color: str | None = None
     available_thickness: str | None = None
     base_price: float = 0.0
+    price_usd: float = 0.0
+    currency: str = "ARS"
+    supplier: str | None = None
+    stock_available: int = 0
     notes: str | None = None
 
 
@@ -57,11 +57,27 @@ class MaterialUpdate(BaseModel):
     color: str | None = None
     available_thickness: str | None = None
     base_price: float | None = None
+    price_usd: float | None = None
+    currency: str | None = None
+    supplier: str | None = None
+    stock_available: int | None = None
     notes: str | None = None
 
 
-class MaterialResponse(MaterialBase):
+class MaterialResponse(MaterialBase, BaseResponse):
     id: int
     created_at: datetime
 
-    model_config = {"from_attributes": True}
+
+class PriceHistoryCreate(BaseModel):
+    material_id: int
+    price_m2: float = 0.0
+
+
+class PriceHistoryResponse(BaseResponse):
+    id: int
+    material_id: int
+    material_name: str | None = None
+    price_m2: float
+    date: datetime
+    created_at: datetime

@@ -2,6 +2,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { api } from "../../api/client";
 import { useNotify } from "../../context/NotificationContext";
+import { ErrorBlock } from "../../components/ui/ErrorBlock";
+import { FormActions } from "../../components/ui/FormActions";
 import type { Material, MaterialCategory, MaterialColor, MaterialThickness } from "../../types";
 import styles from "./MaterialForm.module.css";
 
@@ -74,10 +76,7 @@ export function MaterialForm() {
     return (
       <div className={styles.materialForm}>
         <h2 className={styles.materialForm__title}>{isEdit ? "Editar Material" : "Nuevo Material"}</h2>
-        <div className={styles.materialForm__error}>
-          <p>{dataError}</p>
-          <button type="button" className={styles.materialForm__submit} onClick={loadData}>Reintentar</button>
-        </div>
+        <ErrorBlock message={dataError} onRetry={loadData} />
       </div>
     );
   }
@@ -119,10 +118,7 @@ export function MaterialForm() {
           Observaciones
           <textarea className={styles.materialForm__textarea} name="notes" value={form.notes} onChange={handleChange} />
         </label>
-        <div className={styles.materialForm__actions}>
-          <button className={styles.materialForm__submit} type="submit" disabled={saving || dataLoading}>{saving ? "Guardando..." : "Guardar"}</button>
-          <button className={styles.materialForm__cancel} type="button" onClick={() => navigate("/materials")}>Cancelar</button>
-        </div>
+        <FormActions loading={saving || dataLoading} />
       </form>
     </div>
   );

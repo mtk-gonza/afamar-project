@@ -23,6 +23,10 @@ class Settings(BaseSettings):
     smtp_password: str = ""
     smtp_from: str = ""
 
+    # WhatsApp
+    whatsapp_api_url: str = ""
+    whatsapp_api_key: str = ""
+
     @property
     def origins(self) -> list[str]:
         return [o.strip() for o in self.cors_origins.split(",") if o.strip()]

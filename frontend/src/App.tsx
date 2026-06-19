@@ -1,18 +1,23 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { lazy } from "react";
 import { Layout } from "./components/Layout/Layout";
-import { Dashboard } from "./pages/Dashboard/Dashboard";
-import { Budgets } from "./pages/Budgets/Budgets";
-import { BudgetForm } from "./pages/Budgets/BudgetForm";
-import { WorkOrders } from "./pages/WorkOrders/WorkOrders";
-import { WorkOrderForm } from "./pages/WorkOrders/WorkOrderForm";
-import { Clients } from "./pages/Clients/Clients";
-import { ClientForm } from "./pages/Clients/ClientForm";
-import { Materials } from "./pages/Materials/Materials";
-import { MaterialForm } from "./pages/Materials/MaterialForm";
-import { PoolStock } from "./pages/PoolStock/PoolStock";
-import { PoolStockForm } from "./pages/PoolStock/PoolStockForm";
-import { Reports } from "./pages/Reports/Reports";
-import { Settings } from "./pages/Settings/Settings";
+
+const Dashboard = lazy(() => import("./pages/Dashboard/Dashboard").then((m) => ({ default: m.Dashboard })));
+const Budgets = lazy(() => import("./pages/Budgets/Budgets").then((m) => ({ default: m.Budgets })));
+const BudgetForm = lazy(() => import("./pages/Budgets/BudgetForm").then((m) => ({ default: m.BudgetForm })));
+const WorkOrders = lazy(() => import("./pages/WorkOrders/WorkOrders").then((m) => ({ default: m.WorkOrders })));
+const WorkOrderForm = lazy(() => import("./pages/WorkOrders/WorkOrderForm").then((m) => ({ default: m.WorkOrderForm })));
+const Clients = lazy(() => import("./pages/Clients/Clients").then((m) => ({ default: m.Clients })));
+const ClientForm = lazy(() => import("./pages/Clients/ClientForm").then((m) => ({ default: m.ClientForm })));
+const Materials = lazy(() => import("./pages/Materials/Materials").then((m) => ({ default: m.Materials })));
+const MaterialForm = lazy(() => import("./pages/Materials/MaterialForm").then((m) => ({ default: m.MaterialForm })));
+const PoolStock = lazy(() => import("./pages/PoolStock/PoolStock").then((m) => ({ default: m.PoolStock })));
+const PoolStockForm = lazy(() => import("./pages/PoolStock/PoolStockForm").then((m) => ({ default: m.PoolStockForm })));
+const Reports = lazy(() => import("./pages/Reports/Reports").then((m) => ({ default: m.Reports })));
+const Settings = lazy(() => import("./pages/Settings/Settings").then((m) => ({ default: m.Settings })));
+const Measurements = lazy(() => import("./pages/Measurements/Measurements").then((m) => ({ default: m.Measurements })));
+const OnlineBudgets = lazy(() => import("./pages/OnlineBudgets/OnlineBudgets").then((m) => ({ default: m.OnlineBudgets })));
+const Calculator = lazy(() => import("./pages/Calculator/Calculator").then((m) => ({ default: m.Calculator })));
 
 export default function App() {
   return (
@@ -37,6 +42,9 @@ export default function App() {
           <Route path="pool-stock/:id/edit" element={<PoolStockForm />} />
           <Route path="reports" element={<Reports />} />
           <Route path="settings" element={<Settings />} />
+          <Route path="measurements" element={<Measurements />} />
+          <Route path="online-budgets" element={<OnlineBudgets />} />
+          <Route path="calculator" element={<Calculator />} />
         </Route>
       </Routes>
     </BrowserRouter>

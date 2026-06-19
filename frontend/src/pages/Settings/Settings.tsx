@@ -21,6 +21,7 @@ export function Settings() {
     pdf_footer: "", budget_terms: "", delivery_terms: "", warranty_text: "",
   });
   const [saved, setSaved] = useState(false);
+  const [_loadError, setLoadError] = useState(false);
 
   // ── Tab: Opciones ──
   const [options, setOptions] = useState<Record<string, AppOption[]>>({});
@@ -34,16 +35,16 @@ export function Settings() {
 
   // ── Load ──
   const loadGeneral = useCallback(() => {
-    api.getSettings().then(setSettings);
+    api.getSettings().then(setSettings).catch(() => setLoadError(true));
   }, []);
 
   const loadOptions = useCallback(() => {
     OPTION_CATEGORIES.forEach((cat) => {
-      api.getOptions(cat.key).then((opts: any) => setOptions((prev) => ({ ...prev, [cat.key]: opts })));
+      api.getOptions(cat.key).then((opts: any) => setOptions((prev) => ({ ...prev, [cat.key]: opts }))).catch(() => setLoadError(true));
     });
-    api.getCategories().then(setCategories);
-    api.getColors().then(setColors);
-    api.getThicknesses().then(setThicknesses);
+    api.getCategories().then(setCategories).catch(() => setLoadError(true));
+    api.getColors().then(setColors).catch(() => setLoadError(true));
+    api.getThicknesses().then(setThicknesses).catch(() => setLoadError(true));
   }, []);
 
   useEffect(() => { loadGeneral(); }, [loadGeneral]);
@@ -147,6 +148,31 @@ export function Settings() {
               <label className={styles.settings__label}>
                 Email <input className={styles.settings__input} value={settings.company_email} onChange={(e) => setSettings((s) => ({ ...s, company_email: e.target.value }))} />
               </label>
+            </div>
+          </fieldset>
+
+          <fieldset className={styles.settings__fieldset}>
+            <legend>Logo de la empresa</legend>
+            <div className={styles.settings__logoRow}>
+              {settings.company_logo && (
+                <img src={settings.company_logo} alt="Logo" className={styles.settings__logoPreview} />
+              )}
+              <div className={styles.settings__logoFields}>
+                <label className={styles.settings__label}>
+                  URL del logo
+                  <input className={styles.settings__input} value={settings.company_logo} onChange={(e) => setSettings((s) => ({ ...s, company_logo: e.target.value }))} placeholder="https://ejemplo.com/logo.png" />
+                </label>
+                <label className={styles.settings__label}>
+                  O subir archivo
+                  <input type="file" accept="image/*" className={styles.settings__input} onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (!file) return;
+                    const reader = new FileReader();
+                    reader.onload = () => setSettings((s) => ({ ...s, company_logo: reader.result as string }));
+                    reader.readAsDataURL(file);
+                  }} />
+                </label>
+              </div>
             </div>
           </fieldset>
 

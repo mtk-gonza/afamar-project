@@ -27,6 +27,19 @@ class WorkOrderRepository(BaseRepository):
     def get_by_client(self, client_id: int) -> List[WorkOrder]:
         return self.db.query(WorkOrder).filter(WorkOrder.client_id == client_id).order_by(WorkOrder.id.desc()).all()
 
+    def search(self, term: str) -> List[WorkOrder]:
+        pattern = f"%{term}%"
+        return (
+            self.db.query(WorkOrder)
+            .filter(
+                WorkOrder.number.ilike(pattern)
+                | WorkOrder.snapshot_name.ilike(pattern)
+                | WorkOrder.material.ilike(pattern)
+            )
+            .order_by(WorkOrder.id.desc())
+            .all()
+        )
+
     def get_last_number(self) -> Optional[str]:
         order = self.db.query(WorkOrder).order_by(WorkOrder.id.desc()).first()
         return order.number if order else None

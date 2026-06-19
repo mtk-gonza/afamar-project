@@ -1,5 +1,6 @@
 import logging
 import time
+from contextlib import asynccontextmanager
 
 from alembic import command
 from alembic.config import Config as AlembicConfig
@@ -10,7 +11,6 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app.api.v1.router import router as api_router
 from app.core.config import settings
-from app.core.database import Base, engine
 from app.core.logging import setup_logging
 from app.core.responses import error
 from app.utils.seed import seed_default_data
@@ -32,11 +32,14 @@ def run_migrations():
             logger.warning("Alembic stamp also failed", exc_info=True)
 
 
-Base.metadata.create_all(bind=engine)
-run_migrations()
-seed_default_data()
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    run_migrations()
+    seed_default_data()
+    yield
 
-app = FastAPI(title=settings.app_name, version=settings.app_version)
+
+app = FastAPI(title=settings.app_name, version=settings.app_version, lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,

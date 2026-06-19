@@ -1,11 +1,19 @@
 import { useCallback, useEffect, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { api } from "../../api/client";
+import { useConfirm } from "../../components/ui/useConfirm";
+import { PageHeader } from "../../components/ui/PageHeader";
+import { LoadingSpinner } from "../../components/ui/LoadingSpinner";
+import { ErrorBlock } from "../../components/ui/ErrorBlock";
+import { EmptyState } from "../../components/ui/EmptyState";
+import { SearchInput } from "../../components/ui/SearchInput";
+import { TableActions } from "../../components/ui/TableActions";
 import type { Client } from "../../types";
 import styles from "./Clients.module.css";
 
 export function Clients() {
   const navigate = useNavigate();
+  const { confirm, dialog } = useConfirm();
   const [items, setItems] = useState<Client[]>([]);
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
@@ -27,29 +35,22 @@ export function Clients() {
   useEffect(() => { load(search); }, [search, load]);
 
   const handleDelete = async (id: number, name: string) => {
-    if (!confirm(`¿Eliminar cliente "${name}"?`)) return;
+    if (!(await confirm(`¿Eliminar cliente "${name}"?`, "Eliminar", true))) return;
     await api.deleteClient(id);
     load(search);
   };
 
   return (
     <div className={styles.clients}>
-      <div className={styles.clients__header}>
-        <h2 className={styles.clients__title}>Clientes</h2>
-        <div className={styles.clients__toolbar}>
-          <input className={styles.clients__search} type="text" placeholder="Buscar..." value={search} onChange={(e) => setSearch(e.target.value)} />
-          <Link to="/clients/new" className={styles.clients__addBtn}>+ Nuevo</Link>
-        </div>
-      </div>
+      <PageHeader title="Clientes" addLink="/clients/new">
+        <SearchInput value={search} onChange={setSearch} />
+      </PageHeader>
 
-      {loading && <div className={styles.clients__state}>Cargando...</div>}
-      {error && (
-        <div className={styles.clients__state}>
-          <p>{error}</p>
-          <button className={styles.clients__addBtn} onClick={() => load(search)}>Reintentar</button>
-        </div>
+      {loading && <LoadingSpinner />}
+      {error && <ErrorBlock message={error} onRetry={() => load(search)} />}
+      {!loading && !error && items.length === 0 && (
+        <EmptyState message={search ? "Sin resultados." : "No hay clientes aún."} />
       )}
-      {!loading && !error && items.length === 0 && <div className={styles.clients__state}>{search ? "Sin resultados." : "No hay clientes aún."}</div>}
 
       {!loading && !error && items.length > 0 && (
         <table className={styles.clients__table}>
@@ -71,15 +72,13 @@ export function Clients() {
                 <td>{c.email}</td>
                 <td>{c.address}</td>
                 <td>$ {c.total_purchased.toFixed(2)}</td>
-                <td className={styles.clients__actions}>
-                  <button className={styles.clients__actionBtn} onClick={() => navigate(`/clients/${c.id}/edit`)}>Editar</button>
-                  <button className={`${styles.clients__actionBtn} ${styles["clients__actionBtn--danger"]}`} onClick={() => handleDelete(c.id, c.name)}>Eliminar</button>
-                </td>
+                <TableActions onEdit={() => navigate(`/clients/${c.id}/edit`)} onDelete={() => handleDelete(c.id, c.name)} />
               </tr>
             ))}
           </tbody>
         </table>
       )}
+      {dialog}
     </div>
   );
 }

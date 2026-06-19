@@ -1,11 +1,18 @@
 import { useCallback, useEffect, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { api } from "../../api/client";
+import { useConfirm } from "../../components/ui/useConfirm";
+import { PageHeader } from "../../components/ui/PageHeader";
+import { LoadingSpinner } from "../../components/ui/LoadingSpinner";
+import { ErrorBlock } from "../../components/ui/ErrorBlock";
+import { EmptyState } from "../../components/ui/EmptyState";
+import { TableActions } from "../../components/ui/TableActions";
 import type { Material, MaterialColor, MaterialThickness } from "../../types";
 import styles from "./Materials.module.css";
 
 export function Materials() {
   const navigate = useNavigate();
+  const { confirm, dialog } = useConfirm();
   const [items, setItems] = useState<Material[]>([]);
   const [colors, setColors] = useState<MaterialColor[]>([]);
   const [thicknesses, setThicknesses] = useState<MaterialThickness[]>([]);
@@ -33,7 +40,7 @@ export function Materials() {
   useEffect(() => { load(); }, [load]);
 
   const handleDelete = async (id: number, name: string) => {
-    if (!confirm(`¿Eliminar material "${name}"?`)) return;
+    if (!(await confirm(`¿Eliminar material "${name}"?`, "Eliminar", true))) return;
     await api.deleteMaterial(id);
     load();
   };
@@ -54,15 +61,11 @@ export function Materials() {
 
   return (
     <div className={styles.materials}>
-      <div className={styles.materials__header}>
-        <h2 className={styles.materials__title}>Materiales</h2>
-        <div style={{ display: "flex", gap: 8 }}>
-          <button className={styles.materials__adminBtn} onClick={() => setShowAdmin(!showAdmin)}>
-            {showAdmin ? "Cerrar" : "Gestionar colores/espesores"}
-          </button>
-          <Link to="/materials/new" className={styles.materials__addBtn}>+ Nuevo</Link>
-        </div>
-      </div>
+      <PageHeader title="Materiales" addLink="/materials/new">
+        <button className={styles.materials__adminBtn} onClick={() => setShowAdmin(!showAdmin)}>
+          {showAdmin ? "Cerrar" : "Gestionar colores/espesores"}
+        </button>
+      </PageHeader>
 
       {showAdmin && (
         <div className={styles.materials__admin}>
@@ -99,14 +102,9 @@ export function Materials() {
         </div>
       )}
 
-      {loading && <div className={styles.materials__state}>Cargando...</div>}
-      {error && (
-        <div className={styles.materials__state}>
-          <p>{error}</p>
-          <button className={styles.materials__addBtn} onClick={load}>Reintentar</button>
-        </div>
-      )}
-      {!loading && !error && items.length === 0 && <div className={styles.materials__state}>No hay materiales aún.</div>}
+      {loading && <LoadingSpinner />}
+      {error && <ErrorBlock message={error} onRetry={load} />}
+      {!loading && !error && items.length === 0 && <EmptyState message="No hay materiales aún." />}
 
       {!loading && !error && items.length > 0 && (
         <table className={styles.materials__table}>
@@ -121,15 +119,13 @@ export function Materials() {
                 <td>{m.color}</td>
                 <td>{m.available_thickness}</td>
                 <td>$ {m.base_price.toFixed(2)}</td>
-                <td className={styles.materials__actions}>
-                  <button className={styles.materials__actionBtn} onClick={() => navigate(`/materials/${m.id}/edit`)}>Editar</button>
-                  <button className={`${styles.materials__actionBtn} ${styles["materials__actionBtn--danger"]}`} onClick={() => handleDelete(m.id, m.name)}>Eliminar</button>
-                </td>
+                <TableActions onEdit={() => navigate(`/materials/${m.id}/edit`)} onDelete={() => handleDelete(m.id, m.name)} />
               </tr>
             ))}
           </tbody>
         </table>
       )}
+      {dialog}
     </div>
   );
 }

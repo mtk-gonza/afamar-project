@@ -3,6 +3,7 @@ import logging
 from app.core.database import SessionLocal
 from app.models.material import Material, MaterialCategory, MaterialColor, MaterialThickness
 from app.models.options import AppOption
+from app.models.price_history import PriceHistory
 from app.models.setting import Setting
 
 logger = logging.getLogger(__name__)
@@ -14,20 +15,14 @@ def seed_default_data():
         if not db.query(MaterialCategory).first():
             for name in ["Granitos", "Cuarzos", "Sinterizados", "Mármoles"]:
                 db.add(MaterialCategory(name=name))
-            db.commit()
-            logger.info("Seeded material categories")
 
         if not db.query(MaterialColor).first():
             for c in ["Blanco", "Negro", "Gris", "Beige", "Crema", "Rojo", "Verde", "Azul", "Marrón", "Dorado", "Plateado"]:
                 db.add(MaterialColor(name=c))
-            db.commit()
-            logger.info("Seeded material colors")
 
         if not db.query(MaterialThickness).first():
             for t in ["1cm", "2cm", "3cm", "4cm", "6cm"]:
                 db.add(MaterialThickness(name=t))
-            db.commit()
-            logger.info("Seeded material thicknesses")
 
         if not db.query(Material).first():
             common_materials = [
@@ -43,9 +38,10 @@ def seed_default_data():
                 ("Mármol Crema Marfil", 4, "Crema", "3cm", 55.0),
             ]
             for name, cat_id, color, thickness, price in common_materials:
-                db.add(Material(name=name, category_id=cat_id, color=color, available_thickness=thickness, base_price=price))
-            db.commit()
-            logger.info("Seeded common materials")
+                m = Material(name=name, category_id=cat_id, color=color, available_thickness=thickness, base_price=price)
+                db.add(m)
+                db.flush()
+                db.add(PriceHistory(material_id=m.id, material_name=name, price_m2=price))
 
         if not db.query(AppOption).first():
             spec_options = {
@@ -57,8 +53,6 @@ def seed_default_data():
             for cat, values in spec_options.items():
                 for i, val in enumerate(values):
                     db.add(AppOption(category=cat, value=val, sort_order=i))
-            db.commit()
-            logger.info("Seeded spec options")
 
         if not db.query(Setting).first():
             for k, v in {
@@ -66,14 +60,18 @@ def seed_default_data():
                 "company_address": "",
                 "company_phone": "",
                 "company_email": "",
+                "company_logo": "",
                 "pdf_footer": "",
                 "budget_terms": "",
                 "delivery_terms": "",
                 "warranty_text": "",
             }.items():
                 db.add(Setting(key=k, value=v))
-            db.commit()
-            logger.info("Seeded settings defaults")
 
+        db.commit()
+        logger.info("Seed data completed successfully")
+    except Exception:
+        db.rollback()
+        logger.exception("Seed data failed — all changes rolled back")
     finally:
         db.close()

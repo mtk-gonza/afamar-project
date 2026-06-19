@@ -1,26 +1,37 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import Response
 from sqlalchemy.orm import Session
 
 from app.core.dependencies import get_db
 from app.core.exceptions import NotFoundError
-from app.core.responses import created, success
+from app.core.responses import PaginationInfo, created, success
 from app.models.setting import Setting
-from app.schemas.budget import BudgetCreate, BudgetUpdate
+from app.schemas.budget import BudgetCreate, BudgetResponse, BudgetUpdate
 from app.services.budget import BudgetService
 from app.services.email import send_budget_email
 from app.services.pdf import generate_budget_pdf
-from app.utils.pagination import paginate
 
 router = APIRouter()
 
 
 @router.get("")
-def list_budgets(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
+def list_budgets(
+    skip: int = 0,
+    limit: int = 100,
+    status: str | None = None,
+    client_id: int | None = None,
+    db: Session = Depends(get_db),
+):
     service = BudgetService(db)
-    query = service.repo.db.query(service.repo.model)
-    page = paginate(db, query, skip, limit)
-    return success(page.items, page.pagination)
+    items = service.list_filtered(status, client_id, skip, limit)
+    total = service.repo.list_filtered_count(status, client_id)
+    return success(items, PaginationInfo(total=total, skip=skip, limit=limit))
+
+
+@router.get("/search")
+def search_budgets(q: str = Query(min_length=1), db: Session = Depends(get_db)):
+    service = BudgetService(db)
+    return success(service.search(q))
 
 
 @router.get("/{budget_id}")
@@ -59,41 +70,28 @@ def _load_settings(db: Session) -> dict:
     return {row.key: row.value for row in rows}
 
 
-def _budget_to_dict(budget) -> dict:
-    return {
-        "id": budget.id,
-        "number": budget.number,
-        "client_id": budget.client_id,
-        "status": budget.status,
-        "material": budget.material,
-        "color": budget.color,
-        "thickness": budget.thickness,
-        "front": budget.front,
-        "finish": budget.finish,
-        "bacha": budget.bacha,
-        "anafe": budget.anafe,
-        "perforations": budget.perforations,
-        "subtotal": budget.subtotal,
-        "usd_reference": budget.usd_reference,
-        "shipping": budget.shipping,
-        "total": budget.total,
-        "payment_method": budget.payment_method,
-        "validity_days": budget.validity_days,
-        "estimated_delivery": budget.estimated_delivery,
-        "estimated_date": str(budget.estimated_date) if budget.estimated_date else None,
-        "notes": budget.notes,
-        "created_at": str(budget.created_at),
-        "items": [
-            {
-                "id": item.id,
-                "description": item.description,
-                "quantity": item.quantity,
-                "unit_price": item.unit_price,
-                "total": item.total,
-            }
-            for item in (budget.items or [])
-        ],
+_COMPANY_KEYS = ["company_name", "company_address", "company_phone", "company_email", "pdf_footer"]
+_TERMS_KEYS = ["budget_terms", "delivery_terms", "warranty_text"]
+
+
+def _build_company_and_terms(settings_data: dict) -> tuple[dict, dict]:
+    company = {k: settings_data.get(k, "") for k in _COMPANY_KEYS}
+    terms = {k: settings_data.get(k, "") for k in _TERMS_KEYS}
+    return company, terms
+
+
+def _prepare_budget_payload(budget, db: Session) -> tuple[dict, dict, dict, dict]:
+    budget_data = BudgetResponse.model_validate(budget).model_dump(mode="json")
+    client = budget.client
+    client_dict = {
+        "name": client.name,
+        "phone": client.phone,
+        "email": client.email,
+        "address": client.address,
     }
+    settings_data = _load_settings(db)
+    company, terms = _build_company_and_terms(settings_data)
+    return budget_data, client_dict, company, terms
 
 
 @router.get("/{budget_id}/pdf")
@@ -103,23 +101,8 @@ def download_budget_pdf(budget_id: int, db: Session = Depends(get_db)):
     if not budget:
         raise NotFoundError("Budget")
 
-    budget_dict = _budget_to_dict(budget)
-    client = budget.client
-    client_dict = {
-        "name": client.name,
-        "phone": client.phone,
-        "email": client.email,
-        "address": client.address,
-    }
-    settings_data = _load_settings(db)
-
-    company_keys = ["company_name", "company_address", "company_phone", "company_email", "pdf_footer"]
-    company = {k: settings_data.get(k, "") for k in company_keys}
-
-    terms_keys = ["budget_terms", "delivery_terms", "warranty_text"]
-    terms = {k: settings_data.get(k, "") for k in terms_keys}
-
-    pdf_bytes = generate_budget_pdf(budget_dict, client_dict, company=company, terms=terms)
+    budget_data, client_dict, company, terms = _prepare_budget_payload(budget, db)
+    pdf_bytes = generate_budget_pdf(budget_data, client_dict, company=company, terms=terms)
 
     return Response(
         pdf_bytes,
@@ -139,22 +122,8 @@ def email_budget(budget_id: int, db: Session = Depends(get_db)):
     if not client.email:
         raise HTTPException(status_code=400, detail="El cliente no tiene email registrado")
 
-    budget_dict = _budget_to_dict(budget)
-    client_dict = {
-        "name": client.name,
-        "phone": client.phone,
-        "email": client.email,
-        "address": client.address,
-    }
-    settings_data = _load_settings(db)
-
-    company_keys = ["company_name", "company_address", "company_phone", "company_email", "pdf_footer"]
-    company = {k: settings_data.get(k, "") for k in company_keys}
-
-    terms_keys = ["budget_terms", "delivery_terms", "warranty_text"]
-    terms = {k: settings_data.get(k, "") for k in terms_keys}
-
-    pdf_bytes = generate_budget_pdf(budget_dict, client_dict, company=company, terms=terms)
+    budget_data, client_dict, company, terms = _prepare_budget_payload(budget, db)
+    pdf_bytes = generate_budget_pdf(budget_data, client_dict, company=company, terms=terms)
     company_name = company.get("company_name") or "AFAMAR"
 
     try:

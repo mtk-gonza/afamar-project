@@ -3,6 +3,7 @@ from typing import List, Optional
 from sqlalchemy.orm import Session
 
 from app.models.material import Material, MaterialCategory, MaterialColor, MaterialThickness
+from app.models.price_history import PriceHistory
 from app.repositories.base import BaseRepository
 
 
@@ -90,3 +91,16 @@ class MaterialRepository(BaseRepository):
 
     def delete(self, material: Material) -> None:
         super().delete(material)
+
+
+class PriceHistoryRepository(BaseRepository):
+    model = PriceHistory
+
+    def __init__(self, db: Session):
+        super().__init__(db)
+
+    def get_by_material(self, material_id: int) -> List[PriceHistory]:
+        return self.db.query(PriceHistory).filter(PriceHistory.material_id == material_id).order_by(PriceHistory.date.desc()).all()
+
+    def create(self, data: dict) -> PriceHistory:
+        return self.save(PriceHistory(**data))
