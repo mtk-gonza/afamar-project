@@ -6,6 +6,21 @@
 - **Frontend:** Vite + React 19 + TypeScript + CSS Modules (BEM naming)
 - **DB Migrations:** Alembic
 
+## Auth system
+
+- **Backend JWT auth:** `POST /api/v1/auth/login` → returns `access_token` + `user`
+- **User model:** `users` table with username, email, hashed_password, full_name, is_active, is_admin
+- **Password hashing:** passlib bcrypt (requires bcrypt==4.1.3 for passlib compatibility)
+- **Seed admin user:** created on startup if no users exist → `admin` / `admin123`
+- **Protected routes:** backend uses `get_current_user` dependency (Bearer token) — currently admin routes NOT protected at API level (TODO: add `Depends(get_current_user)` to each router)
+- **Frontend auth:** `AuthContext` stores user + token in localStorage, axios interceptor adds Bearer header
+- **Frontend routing:** 
+  - `/` — public landing page
+  - `/login` — login page
+  - `/admin` — protected admin area (all original routes under `/admin/*`)
+  - `ProtectedRoute` component redirects to `/login` if not authenticated
+  - On 401 response, auto-clears auth and redirects to `/login`
+
 ## Project structure
 
 ```

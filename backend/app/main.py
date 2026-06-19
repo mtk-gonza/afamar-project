@@ -11,8 +11,10 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app.api.v1.router import router as api_router
 from app.core.config import settings
+from app.core.database import Base, engine
 from app.core.logging import setup_logging
 from app.core.responses import error
+from app.models import *  # noqa: F401, F403
 from app.utils.seed import seed_default_data
 
 setup_logging()
@@ -20,13 +22,12 @@ logger = logging.getLogger(__name__)
 
 
 def run_migrations():
+    alembic_cfg = AlembicConfig("alembic.ini")
     try:
-        alembic_cfg = AlembicConfig("alembic.ini")
         command.upgrade(alembic_cfg, "head")
     except Exception:
         logger.warning("Alembic upgrade failed — stamping head instead", exc_info=True)
         try:
-            alembic_cfg = AlembicConfig("alembic.ini")
             command.stamp(alembic_cfg, "head")
         except Exception:
             logger.warning("Alembic stamp also failed", exc_info=True)
@@ -34,7 +35,12 @@ def run_migrations():
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    run_migrations()
+    Base.metadata.create_all(bind=engine)
+    alembic_cfg = AlembicConfig("alembic.ini")
+    try:
+        command.stamp(alembic_cfg, "head")
+    except Exception:
+        logger.warning("Could not stamp alembic head", exc_info=True)
     seed_default_data()
     yield
 

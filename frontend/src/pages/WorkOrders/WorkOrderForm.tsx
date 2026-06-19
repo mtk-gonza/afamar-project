@@ -103,7 +103,7 @@ export function WorkOrderForm() {
       } else {
         await api.createWorkOrder(form);
       }
-      navigate("/work-orders");
+      navigate("/admin/work-orders");
     } finally {
       setSaving(false);
     }

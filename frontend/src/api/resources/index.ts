@@ -1,3 +1,4 @@
+import { authApi } from "./auth";
 import { clientsApi } from "./clients";
 import { budgetsApi } from "./budgets";
 import { workOrdersApi } from "./workOrders";
@@ -12,6 +13,10 @@ import { searchApi } from "./search";
 import { whatsappApi } from "./whatsapp";
 
 export const api = {
+  // Auth
+  login: authApi.login,
+  me: authApi.me,
+  register: authApi.register,
   // Clients
   getClients: clientsApi.list,
   getClient: clientsApi.get,

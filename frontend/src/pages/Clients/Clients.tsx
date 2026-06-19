@@ -42,7 +42,7 @@ export function Clients() {
 
   return (
     <div className={styles.clients}>
-      <PageHeader title="Clientes" addLink="/clients/new">
+      <PageHeader title="Clientes" addLink="/admin/clients/new">
         <SearchInput value={search} onChange={setSearch} />
       </PageHeader>
 
@@ -72,7 +72,7 @@ export function Clients() {
                 <td>{c.email}</td>
                 <td>{c.address}</td>
                 <td>$ {c.total_purchased.toFixed(2)}</td>
-                <TableActions onEdit={() => navigate(`/clients/${c.id}/edit`)} onDelete={() => handleDelete(c.id, c.name)} />
+                <TableActions onEdit={() => navigate(`/admin/clients/${c.id}/edit`)} onDelete={() => handleDelete(c.id, c.name)} />
               </tr>
             ))}
           </tbody>

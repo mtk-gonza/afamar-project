@@ -66,7 +66,7 @@ export function MaterialForm() {
       } else {
         await api.createMaterial(form);
       }
-      navigate("/materials");
+      navigate("/admin/materials");
     } finally {
       setSaving(false);
     }

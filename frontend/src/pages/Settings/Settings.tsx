@@ -17,7 +17,7 @@ export function Settings() {
 
   // ── Tab: General ──
   const [settings, setSettings] = useState<SettingsData>({
-    company_name: "", company_address: "", company_phone: "", company_email: "",
+    company_name: "", company_address: "", company_phone: "", company_email: "", company_logo: "",
     pdf_footer: "", budget_terms: "", delivery_terms: "", warranty_text: "",
   });
   const [saved, setSaved] = useState(false);

@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { lazy } from "react";
 import { Layout } from "./components/Layout/Layout";
+import { ProtectedRoute } from "./components/ProtectedRoute/ProtectedRoute";
 
 const Dashboard = lazy(() => import("./pages/Dashboard/Dashboard").then((m) => ({ default: m.Dashboard })));
 const Budgets = lazy(() => import("./pages/Budgets/Budgets").then((m) => ({ default: m.Budgets })));
@@ -18,33 +19,39 @@ const Settings = lazy(() => import("./pages/Settings/Settings").then((m) => ({ d
 const Measurements = lazy(() => import("./pages/Measurements/Measurements").then((m) => ({ default: m.Measurements })));
 const OnlineBudgets = lazy(() => import("./pages/OnlineBudgets/OnlineBudgets").then((m) => ({ default: m.OnlineBudgets })));
 const Calculator = lazy(() => import("./pages/Calculator/Calculator").then((m) => ({ default: m.Calculator })));
+const Login = lazy(() => import("./pages/Login/Login").then((m) => ({ default: m.Login })));
+const Public = lazy(() => import("./pages/Public/Public").then((m) => ({ default: m.Public })));
 
 export default function App() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route element={<Layout />}>
-          <Route index element={<Dashboard />} />
-          <Route path="budgets" element={<Budgets />} />
-          <Route path="budgets/new" element={<BudgetForm />} />
-          <Route path="budgets/:id/edit" element={<BudgetForm />} />
-          <Route path="work-orders" element={<WorkOrders />} />
-          <Route path="work-orders/new" element={<WorkOrderForm />} />
-          <Route path="work-orders/:id/edit" element={<WorkOrderForm />} />
-          <Route path="clients" element={<Clients />} />
-          <Route path="clients/new" element={<ClientForm />} />
-          <Route path="clients/:id/edit" element={<ClientForm />} />
-          <Route path="materials" element={<Materials />} />
-          <Route path="materials/new" element={<MaterialForm />} />
-          <Route path="materials/:id/edit" element={<MaterialForm />} />
-          <Route path="pool-stock" element={<PoolStock />} />
-          <Route path="pool-stock/new" element={<PoolStockForm />} />
-          <Route path="pool-stock/:id/edit" element={<PoolStockForm />} />
-          <Route path="reports" element={<Reports />} />
-          <Route path="settings" element={<Settings />} />
-          <Route path="measurements" element={<Measurements />} />
-          <Route path="online-budgets" element={<OnlineBudgets />} />
-          <Route path="calculator" element={<Calculator />} />
+        <Route index element={<Public />} />
+        <Route path="login" element={<Login />} />
+        <Route element={<ProtectedRoute />}>
+          <Route path="admin" element={<Layout />}>
+            <Route index element={<Dashboard />} />
+            <Route path="budgets" element={<Budgets />} />
+            <Route path="budgets/new" element={<BudgetForm />} />
+            <Route path="budgets/:id/edit" element={<BudgetForm />} />
+            <Route path="work-orders" element={<WorkOrders />} />
+            <Route path="work-orders/new" element={<WorkOrderForm />} />
+            <Route path="work-orders/:id/edit" element={<WorkOrderForm />} />
+            <Route path="clients" element={<Clients />} />
+            <Route path="clients/new" element={<ClientForm />} />
+            <Route path="clients/:id/edit" element={<ClientForm />} />
+            <Route path="materials" element={<Materials />} />
+            <Route path="materials/new" element={<MaterialForm />} />
+            <Route path="materials/:id/edit" element={<MaterialForm />} />
+            <Route path="pool-stock" element={<PoolStock />} />
+            <Route path="pool-stock/new" element={<PoolStockForm />} />
+            <Route path="pool-stock/:id/edit" element={<PoolStockForm />} />
+            <Route path="reports" element={<Reports />} />
+            <Route path="settings" element={<Settings />} />
+            <Route path="measurements" element={<Measurements />} />
+            <Route path="online-budgets" element={<OnlineBudgets />} />
+            <Route path="calculator" element={<Calculator />} />
+          </Route>
         </Route>
       </Routes>
     </BrowserRouter>

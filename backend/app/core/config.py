@@ -27,6 +27,11 @@ class Settings(BaseSettings):
     whatsapp_api_url: str = ""
     whatsapp_api_key: str = ""
 
+    # JWT
+    jwt_secret_key: str = "afamar-secret-key-change-in-production"
+    jwt_algorithm: str = "HS256"
+    jwt_expire_minutes: int = 1440  # 24 hours
+
     @property
     def origins(self) -> list[str]:
         return [o.strip() for o in self.cors_origins.split(",") if o.strip()]

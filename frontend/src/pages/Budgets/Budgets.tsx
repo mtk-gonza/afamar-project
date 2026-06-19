@@ -90,7 +90,7 @@ export function Budgets() {
 
   return (
     <div className={styles.budgets}>
-      <PageHeader title="Presupuestos" addLink="/budgets/new" />
+      <PageHeader title="Presupuestos" addLink="/admin/budgets/new" />
 
       {loading && <LoadingSpinner />}
       {error && <ErrorBlock message={error} onRetry={load} />}
@@ -111,7 +111,7 @@ export function Budgets() {
                 <td>{b.total_usd > 0 ? `US$ ${b.total_usd.toFixed(2)}` : "-"}</td>
                 <td>{b.balance_due > 0 ? `$ ${b.balance_due.toFixed(2)}` : "Pagado"}</td>
                 <td>{new Date(b.created_at).toLocaleDateString()}</td>
-                <TableActions onEdit={() => navigate(`/budgets/${b.id}/edit`)} onDelete={() => handleDelete(b.id, b.number)}>
+                <TableActions onEdit={() => navigate(`/admin/budgets/${b.id}/edit`)} onDelete={() => handleDelete(b.id, b.number)}>
                   {b.status === "pending" && <button className={styles.budgets__actionBtn} onClick={() => handleApproval(b)}>Aprobar</button>}
                   <button className={styles.budgets__actionBtn} title="Descargar PDF" onClick={() => handleDownloadPdf(b)}>PDF</button>
                   <button className={styles.budgets__actionBtn} title="Enviar por email" onClick={() => handleSendEmail(b)}>Email</button>

@@ -34,7 +34,7 @@ export function PoolStockForm() {
       } else {
         await api.createPoolStock(form);
       }
-      navigate("/pool-stock");
+      navigate("/admin/pool-stock");
     } finally {
       setLoading(false);
     }

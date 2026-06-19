@@ -8,6 +8,14 @@ const http = axios.create({
   timeout: 15000,
 });
 
+http.interceptors.request.use((config) => {
+  const token = localStorage.getItem("auth_token");
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
+
 http.interceptors.response.use(
   (res) => {
     if (res.status === 204) return res;
@@ -20,6 +28,13 @@ http.interceptors.response.use(
     return res;
   },
   (error) => {
+    if (error.response?.status === 401) {
+      localStorage.removeItem("auth_token");
+      localStorage.removeItem("auth_user");
+      if (window.location.pathname.startsWith("/admin")) {
+        window.location.href = "/login";
+      }
+    }
     const msg = error.response?.data?.error || error.response?.data?.detail?.[0]?.msg || error.message || "Error de conexión";
     return Promise.reject(new Error(msg));
   },

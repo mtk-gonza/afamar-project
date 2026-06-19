@@ -64,7 +64,7 @@ export function WorkOrders() {
             Kanban
           </button>
         </div>
-        <Link to="/work-orders/new" className={styles.workOrders__addBtn}>+ Nueva</Link>
+        <Link to="/admin/work-orders/new" className={styles.workOrders__addBtn}>+ Nueva</Link>
       </PageHeader>
 
       {loading && <LoadingSpinner />}
@@ -90,7 +90,7 @@ export function WorkOrders() {
                 <td>{o.total_usd > 0 ? `US$ ${o.total_usd.toFixed(2)}` : "-"}</td>
                 <td>{o.balance_due > 0 ? `$ ${o.balance_due.toFixed(2)}` : "Pagado"}</td>
                 <td>{o.delivery_date ? new Date(o.delivery_date).toLocaleDateString() : "-"}</td>
-                <TableActions onEdit={() => navigate(`/work-orders/${o.id}/edit`)} onDelete={() => handleDelete(o.id, o.number)} />
+                <TableActions onEdit={() => navigate(`/admin/work-orders/${o.id}/edit`)} onDelete={() => handleDelete(o.id, o.number)} />
               </tr>
             ))}
           </tbody>
@@ -108,7 +108,7 @@ export function WorkOrders() {
                   <div
                     key={o.id}
                     className={`${styles.workOrders__card} ${o.priority === "urgent" ? styles["workOrders__card--urgent"] : ""}`}
-                    onClick={() => navigate(`/work-orders/${o.id}/edit`)}
+                    onClick={() => navigate(`/admin/work-orders/${o.id}/edit`)}
                   >
                     <strong>{o.number}</strong>
                     <span>Cliente: {o.client_id}</span>

@@ -36,7 +36,7 @@ export function ClientForm() {
       } else {
         await api.createClient(form);
       }
-      navigate("/clients");
+      navigate("/admin/clients");
     } finally {
       setLoading(false);
     }

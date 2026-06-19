@@ -92,7 +92,7 @@ export function Dashboard() {
           <h3 className={styles.dashboard__chartTitle}>Últimos presupuestos</h3>
           {stats.recent_budgets.length === 0 && <p className={styles.dashboard__recentEmpty}>Sin presupuestos recientes</p>}
           {stats.recent_budgets.map((b) => (
-            <div key={b.id} className={styles.dashboard__recentItem} onClick={() => navigate(`/budgets/${b.id}/edit`)}>
+            <div key={b.id} className={styles.dashboard__recentItem} onClick={() => navigate(`/admin/budgets/${b.id}/edit`)}>
               <strong>{b.number}</strong>
               <span>$ {b.total.toFixed(2)}</span>
               <span className={styles.dashboard__recentDate}>{new Date(b.created_at).toLocaleDateString()}</span>
@@ -103,7 +103,7 @@ export function Dashboard() {
           <h3 className={styles.dashboard__chartTitle}>Últimas órdenes</h3>
           {stats.recent_orders.length === 0 && <p className={styles.dashboard__recentEmpty}>Sin órdenes recientes</p>}
           {stats.recent_orders.map((o) => (
-            <div key={o.id} className={styles.dashboard__recentItem} onClick={() => navigate(`/work-orders/${o.id}/edit`)}>
+            <div key={o.id} className={styles.dashboard__recentItem} onClick={() => navigate(`/admin/work-orders/${o.id}/edit`)}>
               <strong>{o.number}</strong>
               <span>$ {o.total.toFixed(2)}</span>
               <span className={styles.dashboard__recentDate}>{new Date(o.created_at).toLocaleDateString()}</span>
@@ -113,10 +113,10 @@ export function Dashboard() {
       </div>
 
       <div className={styles.dashboard__actions}>
-        <Link to="/budgets/new" className={styles.dashboard__actionBtn}>Nuevo Presupuesto</Link>
-        <Link to="/work-orders/new" className={styles.dashboard__actionBtn}>Nueva Orden</Link>
-        <Link to="/clients/new" className={styles.dashboard__actionBtn}>Nuevo Cliente</Link>
-        <Link to="/measurements/new" className={styles.dashboard__actionBtn}>Nueva Medición</Link>
+        <Link to="/admin/budgets/new" className={styles.dashboard__actionBtn}>Nuevo Presupuesto</Link>
+        <Link to="/admin/work-orders/new" className={styles.dashboard__actionBtn}>Nueva Orden</Link>
+        <Link to="/admin/clients/new" className={styles.dashboard__actionBtn}>Nuevo Cliente</Link>
+        <Link to="/admin/measurements/new" className={styles.dashboard__actionBtn}>Nueva Medición</Link>
       </div>
     </div>
   );

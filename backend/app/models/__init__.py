@@ -8,6 +8,7 @@ from app.models.setting import Setting
 from app.models.measurement import Measurement
 from app.models.online_budget import OnlineBudget
 from app.models.price_history import PriceHistory
+from app.models.user import User
 
 __all__ = [
     "Client",
@@ -27,4 +28,5 @@ __all__ = [
     "Measurement",
     "OnlineBudget",
     "PriceHistory",
+    "User",
 ]

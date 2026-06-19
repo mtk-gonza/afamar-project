@@ -5,6 +5,8 @@ from app.models.material import Material, MaterialCategory, MaterialColor, Mater
 from app.models.options import AppOption
 from app.models.price_history import PriceHistory
 from app.models.setting import Setting
+from app.models.user import User
+from app.services.auth import hash_password
 
 logger = logging.getLogger(__name__)
 
@@ -53,6 +55,16 @@ def seed_default_data():
             for cat, values in spec_options.items():
                 for i, val in enumerate(values):
                     db.add(AppOption(category=cat, value=val, sort_order=i))
+
+        if not db.query(User).first():
+            db.add(User(
+                username="admin",
+                email="admin@afamar.com.ar",
+                hashed_password=hash_password("admin123"),
+                full_name="Administrador",
+                is_admin=True,
+                is_active=True,
+            ))
 
         if not db.query(Setting).first():
             for k, v in {

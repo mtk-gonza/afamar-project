@@ -1,6 +1,7 @@
 import { Suspense, useEffect, useState } from "react";
 import { NavLink, Outlet } from "react-router-dom";
 import { api } from "../../api/client";
+import { useAuth } from "../../context/AuthContext";
 import { LoadingSpinner } from "../ui/LoadingSpinner";
 import type { SettingsData } from "../../types";
 import styles from "./Layout.module.css";
@@ -9,32 +10,32 @@ const navGroups = [
   {
     label: "General",
     items: [
-      { to: "/", label: "Dashboard" },
-      { to: "/budgets", label: "Presupuestos" },
-      { to: "/work-orders", label: "Órdenes" },
-      { to: "/clients", label: "Clientes" },
+      { to: "/admin", label: "Dashboard", end: true },
+      { to: "/admin/budgets", label: "Presupuestos" },
+      { to: "/admin/work-orders", label: "Órdenes" },
+      { to: "/admin/clients", label: "Clientes" },
     ],
   },
   {
     label: "Inventario",
     items: [
-      { to: "/materials", label: "Materiales" },
-      { to: "/pool-stock", label: "Piletas" },
+      { to: "/admin/materials", label: "Materiales" },
+      { to: "/admin/pool-stock", label: "Piletas" },
     ],
   },
   {
     label: "Operaciones",
     items: [
-      { to: "/measurements", label: "Mediciones" },
-      { to: "/online-budgets", label: "Online" },
-      { to: "/calculator", label: "Calculadora" },
+      { to: "/admin/measurements", label: "Mediciones" },
+      { to: "/admin/online-budgets", label: "Online" },
+      { to: "/admin/calculator", label: "Calculadora" },
     ],
   },
   {
     label: "Administración",
     items: [
-      { to: "/reports", label: "Reportes" },
-      { to: "/settings", label: "Config" },
+      { to: "/admin/reports", label: "Reportes" },
+      { to: "/admin/settings", label: "Config" },
     ],
   },
 ];
@@ -43,6 +44,7 @@ export function Layout() {
   const [collapsed, setCollapsed] = useState(false);
   const [settings, setSettings] = useState<SettingsData | null>(null);
   const [logoError, setLogoError] = useState(false);
+  const { user, logout } = useAuth();
 
   useEffect(() => {
     api.getSettings().then(setSettings).catch(() => setSettings(null));
@@ -84,7 +86,7 @@ export function Layout() {
                 <NavLink
                   key={item.to}
                   to={item.to}
-                  end={item.to === "/"}
+                  end={item.end}
                   className={({ isActive }) =>
                     `${styles.layout__link} ${isActive ? styles["layout__link--active"] : ""}`
                   }
@@ -95,6 +97,15 @@ export function Layout() {
             </div>
           ))}
         </nav>
+
+        <div className={styles.layout__footer}>
+          {!collapsed && user && (
+            <span className={styles.layout__user}>{user.full_name || user.username}</span>
+          )}
+          <button type="button" className={styles.layout__logout} onClick={logout} title="Cerrar sesión">
+            {collapsed ? "X" : "Cerrar sesión"}
+          </button>
+        </div>
       </aside>
       <main className={styles.layout__content}>
         <Suspense fallback={<LoadingSpinner />}>

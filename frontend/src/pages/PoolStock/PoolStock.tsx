@@ -42,7 +42,7 @@ export function PoolStock() {
 
   return (
     <div className={styles.poolStock}>
-      <PageHeader title="Stock de Piletas" addLink="/pool-stock/new">
+      <PageHeader title="Stock de Piletas" addLink="/admin/pool-stock/new">
         <SearchInput value={search} onChange={setSearch} placeholder="Buscar marca o modelo..." />
       </PageHeader>
 
@@ -64,7 +64,7 @@ export function PoolStock() {
                 <td>{p.model}</td>
                 <td>{p.material}</td>
                 <td>{p.quantity}</td>
-                <TableActions onEdit={() => navigate(`/pool-stock/${p.id}/edit`)} onDelete={() => handleDelete(p.id, p.brand)} />
+                <TableActions onEdit={() => navigate(`/admin/pool-stock/${p.id}/edit`)} onDelete={() => handleDelete(p.id, p.brand)} />
               </tr>
             ))}
           </tbody>

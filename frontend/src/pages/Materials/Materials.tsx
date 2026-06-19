@@ -61,7 +61,7 @@ export function Materials() {
 
   return (
     <div className={styles.materials}>
-      <PageHeader title="Materiales" addLink="/materials/new">
+      <PageHeader title="Materiales" addLink="/admin/materials/new">
         <button className={styles.materials__adminBtn} onClick={() => setShowAdmin(!showAdmin)}>
           {showAdmin ? "Cerrar" : "Gestionar colores/espesores"}
         </button>
@@ -119,7 +119,7 @@ export function Materials() {
                 <td>{m.color}</td>
                 <td>{m.available_thickness}</td>
                 <td>$ {m.base_price.toFixed(2)}</td>
-                <TableActions onEdit={() => navigate(`/materials/${m.id}/edit`)} onDelete={() => handleDelete(m.id, m.name)} />
+                <TableActions onEdit={() => navigate(`/admin/materials/${m.id}/edit`)} onDelete={() => handleDelete(m.id, m.name)} />
               </tr>
             ))}
           </tbody>

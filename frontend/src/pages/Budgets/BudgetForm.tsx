@@ -220,7 +220,7 @@ export function BudgetForm() {
       } else {
         await api.createBudget(payload);
       }
-      navigate("/budgets");
+      navigate("/admin/budgets");
     } catch {
       notify("Error al guardar el presupuesto", "error");
     } finally {

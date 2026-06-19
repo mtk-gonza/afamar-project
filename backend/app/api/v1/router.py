@@ -1,6 +1,7 @@
 from fastapi import APIRouter
 
 from app.api.v1 import (
+    auth,
     budgets,
     clients,
     materials,
@@ -17,6 +18,7 @@ from app.api.v1 import (
 
 router = APIRouter(prefix="/api/v1")
 
+router.include_router(auth.router, prefix="/auth", tags=["Auth"])
 router.include_router(clients.router, prefix="/clients", tags=["Clients"])
 router.include_router(budgets.router, prefix="/budgets", tags=["Budgets"])
 router.include_router(work_orders.router, prefix="/work-orders", tags=["Work Orders"])
