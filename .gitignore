@@ -1,20 +1,20 @@
 # Backend - Python / FastAPI
-backend/__pycache__/
-backend/**/__pycache__/
-backend/*.py[cod]
-backend/*.egg-info/
-backend/*.egg
-backend/.venv/
-backend/venv/
-backend/dist/
-backend/pdfs/
+afamar-backend/__pycache__/
+afamar-backend/**/__pycache__/
+afamar-backend/*.py[cod]
+afamar-backend/*.egg-info/
+afamar-backend/*.egg
+afamar-backend/.venv/
+afamar-backend/venv/
+afamar-backend/dist/
+afamar-backend/pdfs/
 
 # Frontend - Node / Vite / React
-frontend/node_modules/
-frontend/dist/
-frontend/build/
-frontend/*.tsbuildinfo
-frontend/npm-debug.log*
+afamar-frontend/node_modules/
+afamar-frontend/dist/
+afamar-frontend/build/
+afamar-frontend/*.tsbuildinfo
+afamar-frontend/npm-debug.log*
 
 # Environment
 .env

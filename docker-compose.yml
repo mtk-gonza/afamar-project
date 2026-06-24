@@ -1,9 +1,9 @@
 services:
   backend:
     build:
-      context: ./backend
+      context: ./afamar-backend
     image: afamar-backend:latest
-    container_name: backend
+    container_name: afamar-backend
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:3095/api/health')"]
       interval: 30s
@@ -18,9 +18,9 @@ services:
 
   frontend:
     build:
-      context: ./frontend
+      context: ./afamar-frontend
     image: afamar-frontend:latest
-    container_name: frontend
+    container_name: afamar-frontend
     environment:
       - API_URL=${API_URL:-/api/v1}
     depends_on:

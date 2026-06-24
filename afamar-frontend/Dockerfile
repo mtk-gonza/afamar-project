@@ -1,7 +1,7 @@
 # --- BUILD STAGE ---
 FROM node:20-alpine as builder
 
-WORKDIR /frontend
+WORKDIR /afamar-frontend
 
 # Copy package files
 COPY package*.json ./
@@ -25,7 +25,7 @@ RUN apk add --no-cache gettext
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 
 # Copy built assets
-COPY --from=builder /frontend/dist /usr/share/nginx/html
+COPY --from=builder /afamar-frontend/dist /usr/share/nginx/html
 
 # Copy config template (not config.js, which is generated at runtime)
 COPY public/config.template.js /usr/share/nginx/html/config.template.js

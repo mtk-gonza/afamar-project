@@ -3,7 +3,7 @@ from pydantic_settings import BaseSettings
 
 class Settings(BaseSettings):
     # App
-    app_name: str = "AFAMAR"
+    app_name: str = "AFAMAR API"
     app_version: str = "1.0.0"
     debug: bool = True
 

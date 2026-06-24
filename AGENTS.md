@@ -27,7 +27,7 @@
 ## Project structure
 
 ```
-backend/           — FastAPI app
+afamar-backend/    — FastAPI app
   app/
     main.py        — entrypoint, creates all tables on startup
     core/          — config, database engine, dependencies
@@ -41,7 +41,7 @@ backend/           — FastAPI app
   alembic/         — migration scripts (26893c0fdbc9 is head)
   .env             — DATABASE_URL, CORS_ORIGINS, etc.
 
-frontend/          — Vite + React + TS
+afamar-frontend/   — Vite + React + TS
   src/
     main.tsx       — React entrypoint
     App.tsx        — BrowserRouter + route definitions (all pages)
@@ -55,6 +55,8 @@ frontend/          — Vite + React + TS
     pages/         — one folder per module (Dashboard, Budgets, WorkOrders, Clients, Materials, PoolStock, Measurements, OnlineBudgets, Calculator, Reports, Settings, DailyCash)
     styles/        — global CSS, each component has own .module.css with BEM
 ```
+
+Note: both project folders carry the `afamar-` prefix (afamar-backend, afamar-frontend) so the monorepo can host multiple projects without name collisions.
 
 ## Key conventions
 
@@ -78,14 +80,14 @@ frontend/          — Vite + React + TS
 
 ```bash
 # Backend
-cd backend
+cd afamar-backend
 .\venv\Scripts\pip install -r requirements.txt
 .\venv\Scripts\uvicorn app.main:app --reload --port 3095        # dev server at :3095
 .\venv\Scripts\ruff check .                         # lint
 .\venv\Scripts\pytest                                # tests
 
 # Frontend
-cd frontend
+cd afamar-frontend
 npm install
 npm run dev                          # dev server at :3090
 npm run build                        # production build (tsc + vite)
@@ -134,45 +136,46 @@ npm run preview                      # preview production build
 
 - **Pydantic + Python 3.14:** Use `Optional[date]` / `Optional[datetime]` instead of `date | None` / `datetime | None` in Pydantic schemas. The PEP 604 union syntax causes `TypeError: unsupported operand type(s) for |: 'NoneType' and 'NoneType'` because Pydantic's `eval_type_backport` in Python 3.14 can't resolve `date`/`datetime` in its ForwardRef evaluation context.
 - Regular `str | None`, `int | None`, `float | None` work fine since those are built-in types.
+- **Pillow + Python 3.14:** Use `Pillow>=11.1.0,<12.0` (current pin in `afamar-backend/requirements.txt`). Pillow 10.x has no `cp314` wheels, so pip falls back to a source build and fails with `Failed building wheel for Pillow` unless a C toolchain is installed. Branch 11.1+ ships pre-built `cp314` wheels and is API-compatible with the only PIL usage in `app/services/pdf_html.py` (`Image.new` + `ImageDraw`).
 
 ## Relevant files
 
-- `frontend/src/types/index.ts`: All TypeScript interfaces (updated with Measurement, OnlineBudget, PriceHistory, SearchResults, BudgetAdicional, BudgetSketchElement, enhanced Budget/WorkOrder/Material/PoolStock).
-- `frontend/src/api/client.ts`: All API methods (includes search, reports, measurements, online_budgets, whatsapp, most_used_materials).
-- `frontend/src/pages/Budgets/BudgetForm.tsx`: Enhanced with dual currency, adicionales section, pool selection, financial fields, client snapshot, 4 observation textareas, signature.
-- `frontend/src/pages/Budgets/BudgetForm.module.css`: CSS grid for item/adicional rows, fieldset styling.
-- `frontend/src/pages/Budgets/Budgets.tsx`: List with new columns (USD, balance) and action buttons (PDF, Email, WA).
-- `frontend/src/pages/WorkOrders/WorkOrderForm.tsx`: Enhanced with status transitions, fabrication details, pool, dual currency, financial fields, snapshot.
-- `frontend/src/pages/WorkOrders/WorkOrders.tsx`: Enhanced table columns + Kanban card info.
-- `frontend/src/pages/Dashboard/Dashboard.tsx`: Branded header, bar chart, recent items, online budgets card.
-- `frontend/src/pages/Reports/Reports.tsx`: Monthly sales bar chart, most-used materials, budget status filter.
-- `frontend/src/pages/Settings/Settings.tsx`: Logo upload field (file + URL).
-- `frontend/src/components/Layout/Layout.tsx`: Collapsible sidebar, grouped nav, logo from settings.
-- `frontend/src/components/Layout/Layout.module.css`: Collapse styles, logo img, nav groups.
-- `frontend/src/pages/Measurements/`: Page with list, form, status dropdown.
-- `frontend/src/pages/OnlineBudgets/`: Page with list, form, pool selector.
-- `frontend/src/pages/Calculator/`: Calculator with m² and ARS/USD.
-- `frontend/src/pages/DailyCash/`: Cash module with DailyCashPage (daily form) and CashHistory (closed days history).
-- `backend/app/schemas/budget.py`: Pydantic schemas with all enhanced fields (uses `Optional[date]`/`Optional[datetime]`).
-- `backend/app/schemas/work_order.py`: WorkOrder schemas (uses `Optional[date]`/`Optional[datetime]`).
-- `backend/app/schemas/measurement.py`: Measurement schemas.
-- `backend/app/schemas/online_budget.py`: OnlineBudget schemas.
-- `backend/app/services/*.py`: All services (budget, work_order, material, measurement, online_budget, report, whatsapp).
-- `backend/app/api/v1/*.py`: All API endpoints (budgets, work_orders, materials, measurements, online_budgets, whatsapp, search, reports, router).
-- `backend/app/models/reference.py`: Reference tables (BudgetStatus, WorkOrderStatus, PaymentMethod, PriorityLevel, FinishType) with FK relationships to Budget/WorkOrder.
-- `backend/app/schemas/reference.py`: Pydantic schemas for reference CRUD.
-- `backend/app/api/v1/references.py`: Generic CRUD endpoints for all reference tables at `/api/v1/references/{resource}`.
-- `backend/alembic/versions/c1b5500fd00b_add_reference_fks_and_missing_columns.py`: Adds FK columns (`status_id`, `payment_method_id`, `priority_id`, `finish_id`) to `budgets` and `work_orders` tables + seeds reference data.
-- `backend/alembic/versions/26893c0fdbc9_add_daily_cash_and_cash_movements.py`: Creates `daily_cash` and `cash_movements` tables (idempotent, English naming). All column names in English.
+- `afamar-frontend/src/types/index.ts`: All TypeScript interfaces (updated with Measurement, OnlineBudget, PriceHistory, SearchResults, BudgetAdicional, BudgetSketchElement, enhanced Budget/WorkOrder/Material/PoolStock).
+- `afamar-frontend/src/api/client.ts`: All API methods (includes search, reports, measurements, online_budgets, whatsapp, most_used_materials).
+- `afamar-frontend/src/pages/Budgets/BudgetForm.tsx`: Enhanced with dual currency, adicionales section, pool selection, financial fields, client snapshot, 4 observation textareas, signature.
+- `afamar-frontend/src/pages/Budgets/BudgetForm.module.css`: CSS grid for item/adicional rows, fieldset styling.
+- `afamar-frontend/src/pages/Budgets/Budgets.tsx`: List with new columns (USD, balance) and action buttons (PDF, Email, WA).
+- `afamar-frontend/src/pages/WorkOrders/WorkOrderForm.tsx`: Enhanced with status transitions, fabrication details, pool, dual currency, financial fields, snapshot.
+- `afamar-frontend/src/pages/WorkOrders/WorkOrders.tsx`: Enhanced table columns + Kanban card info.
+- `afamar-frontend/src/pages/Dashboard/Dashboard.tsx`: Branded header, bar chart, recent items, online budgets card.
+- `afamar-frontend/src/pages/Reports/Reports.tsx`: Monthly sales bar chart, most-used materials, budget status filter.
+- `afamar-frontend/src/pages/Settings/Settings.tsx`: Logo upload field (file + URL).
+- `afamar-frontend/src/components/Layout/Layout.tsx`: Collapsible sidebar, grouped nav, logo from settings.
+- `afamar-frontend/src/components/Layout/Layout.module.css`: Collapse styles, logo img, nav groups.
+- `afamar-frontend/src/pages/Measurements/`: Page with list, form, status dropdown.
+- `afamar-frontend/src/pages/OnlineBudgets/`: Page with list, form, pool selector.
+- `afamar-frontend/src/pages/Calculator/`: Calculator with m² and ARS/USD.
+- `afamar-frontend/src/pages/DailyCash/`: Cash module with DailyCashPage (daily form) and CashHistory (closed days history).
+- `afamar-backend/app/schemas/budget.py`: Pydantic schemas with all enhanced fields (uses `Optional[date]`/`Optional[datetime]`).
+- `afamar-backend/app/schemas/work_order.py`: WorkOrder schemas (uses `Optional[date]`/`Optional[datetime]`).
+- `afamar-backend/app/schemas/measurement.py`: Measurement schemas.
+- `afamar-backend/app/schemas/online_budget.py`: OnlineBudget schemas.
+- `afamar-backend/app/services/*.py`: All services (budget, work_order, material, measurement, online_budget, report, whatsapp).
+- `afamar-backend/app/api/v1/*.py`: All API endpoints (budgets, work_orders, materials, measurements, online_budgets, whatsapp, search, reports, router).
+- `afamar-backend/app/models/reference.py`: Reference tables (BudgetStatus, WorkOrderStatus, PaymentMethod, PriorityLevel, FinishType) with FK relationships to Budget/WorkOrder.
+- `afamar-backend/app/schemas/reference.py`: Pydantic schemas for reference CRUD.
+- `afamar-backend/app/api/v1/references.py`: Generic CRUD endpoints for all reference tables at `/api/v1/references/{resource}`.
+- `afamar-backend/alembic/versions/c1b5500fd00b_add_reference_fks_and_missing_columns.py`: Adds FK columns (`status_id`, `payment_method_id`, `priority_id`, `finish_id`) to `budgets` and `work_orders` tables + seeds reference data.
+- `afamar-backend/alembic/versions/26893c0fdbc9_add_daily_cash_and_cash_movements.py`: Creates `daily_cash` and `cash_movements` tables (idempotent, English naming). All column names in English.
 - **Cash module (English naming):** `GET /api/v1/cash/daily?query_date=` creates/returns daily cash register; `POST /api/v1/cash/movements` creates INCOME/EXPENSE; `DELETE /api/v1/cash/movements/{id}` removes; `PUT /api/v1/cash/previous-balance` sets opening balance; `POST /api/v1/cash/daily/close` finalizes a day; `GET /api/v1/cash/history` lists closed days.
 - Cash backend files: `models/daily_cash.py` (DailyCash + CashMovement), `schemas/daily_cash.py` (CashMovementCreate, UpdatePreviousBalance, CloseCashRequest), `repositories/daily_cash.py` (DailyCashRepository.get_or_create, recalculate), `services/daily_cash.py` (DailyCashService), `api/v1/daily_cash.py` (6 endpoints, protected by auth).
 - `DailyCashRepository.recalculate(cash_id)` recomputes totals based on movements. Movement `type`: `INCOME` or `EXPENSE`. `payment_method`: `Efectivo`, `Transferencia`, `Tarjeta`. `expense_type`: `Gasto`, `Transferencia Banco`.
 - DB tables: `daily_cash` (date, previous_balance, total_income, total_expenses, total_sum, current_balance, real_cash, is_closed, notes) and `cash_movements` (type, amount, description, payment_method, folder_status, order_id, order_number, order_total, client_name, expense_type, remaining_balance).
 - WorkOrder service auto-creates cash movements on deposit: `_create_cash_movement_on_deposit` in `services/work_order.py` creates an INCOME cash movement when a budget is converted to a work order with `deposit_received > 0`, or when deposit is increased during update.
-- `frontend/src/api/resources/references.ts`: Frontend API client for all 5 reference resources.
-- `backend/alembic/versions/85179924c32e_add_new_models_and_columns.py`: Migration for all new tables/columns.
-- `backend/app/utils/seed.py`: Seed with PriceHistory and company_logo.
-- `backend/app/core/config.py`: WhatsApp settings added.
-- `backend/app/utils/seed.py`: Seed with PriceHistory and company_logo.
-- `backend/app/core/config.py`: WhatsApp settings added.
-- `backend/requirements.txt`: `requests` added.
+- `afamar-frontend/src/api/resources/references.ts`: Frontend API client for all 5 reference resources.
+- `afamar-backend/alembic/versions/85179924c32e_add_new_models_and_columns.py`: Migration for all new tables/columns.
+- `afamar-backend/app/utils/seed.py`: Seed with PriceHistory and company_logo.
+- `afamar-backend/app/core/config.py`: WhatsApp settings added.
+- `afamar-backend/app/utils/seed.py`: Seed with PriceHistory and company_logo.
+- `afamar-backend/app/core/config.py`: WhatsApp settings added.
+- `afamar-backend/requirements.txt`: `requests` added.
