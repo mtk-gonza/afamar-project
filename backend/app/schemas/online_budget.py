@@ -7,6 +7,7 @@ from app.schemas.base import BaseResponse
 
 class OnlineBudgetBase(BaseModel):
     client_name: str | None = None
+    phone: str | None = None
     work_type: str | None = None
     date: str | None = None
     usd_rate: float = 1000.0
@@ -24,6 +25,7 @@ class OnlineBudgetCreate(OnlineBudgetBase):
 
 class OnlineBudgetUpdate(BaseModel):
     client_name: str | None = None
+    phone: str | None = None
     work_type: str | None = None
     date: str | None = None
     usd_rate: float | None = None

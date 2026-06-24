@@ -35,15 +35,15 @@ export function Budgets() {
   useEffect(() => { load(); }, [load]);
 
   const handleApproval = async (b: Budget) => {
-    if (b.status === "pending") {
-      await api.updateBudget(b.id, { status: "approved" });
+    if (b.status === "PENDIENTE") {
+      await api.updateBudget(b.id, { status: "APROBADO" });
       if (await confirm("¿Convertir a Orden de Trabajo?")) {
         await api.createFromBudget(b.id);
       }
-    } else if (b.status === "approved") {
-      await api.updateBudget(b.id, { status: "rejected" });
+    } else if (b.status === "APROBADO") {
+      await api.updateBudget(b.id, { status: "RECHAZADO" });
     } else {
-      await api.updateBudget(b.id, { status: "pending" });
+      await api.updateBudget(b.id, { status: "PENDIENTE" });
     }
     load();
   };
@@ -112,7 +112,7 @@ export function Budgets() {
                 <td>{b.balance_due > 0 ? `$ ${b.balance_due.toFixed(2)}` : "Pagado"}</td>
                 <td>{new Date(b.created_at).toLocaleDateString()}</td>
                 <TableActions onEdit={() => navigate(`/admin/budgets/${b.id}/edit`)} onDelete={() => handleDelete(b.id, b.number)}>
-                  {b.status === "pending" && <button className={styles.budgets__actionBtn} onClick={() => handleApproval(b)}>Aprobar</button>}
+                  {b.status === "PENDIENTE" && <button className={styles.budgets__actionBtn} onClick={() => handleApproval(b)}>Aprobar</button>}
                   <button className={styles.budgets__actionBtn} title="Descargar PDF" onClick={() => handleDownloadPdf(b)}>PDF</button>
                   <button className={styles.budgets__actionBtn} title="Enviar por email" onClick={() => handleSendEmail(b)}>Email</button>
                   <button className={styles.budgets__actionBtn} title="Enviar por WhatsApp" onClick={() => handleSendWhatsApp(b)}>WA</button>

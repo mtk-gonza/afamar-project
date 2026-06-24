@@ -16,3 +16,13 @@
 .reports__barTrack { width: 100%; max-width: 36px; height: 120px; background: #eee; border-radius: 4px 4px 0 0; overflow: hidden; display: flex; align-items: flex-end; }
 .reports__barFill { width: 100%; background: #1a1a2e; border-radius: 4px 4px 0 0; transition: height 0.3s; min-height: 2px; }
 .reports__barValue { font-size: 0.7rem; font-weight: 600; color: #333; }
+.reports__filters { display: flex; gap: 0.75rem; align-items: flex-end; margin-bottom: 1.25rem; flex-wrap: wrap; }
+.reports__filterLabel { display: flex; flex-direction: column; gap: 0.2rem; font-size: 0.8rem; font-weight: 500; color: #333; }
+.reports__filterInput { padding: 0.4rem 0.6rem; border: 1px solid #ccc; border-radius: 6px; font-size: 0.85rem; font-family: inherit; }
+.reports__filterClear { background: #eee; border: 1px solid #ccc; padding: 0.4rem 0.8rem; border-radius: 6px; font-size: 0.8rem; cursor: pointer; color: #333; }
+.reports__pieWrapper { display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; }
+.reports__pieLegend { display: flex; flex-direction: column; gap: 0.35rem; }
+.reports__pieLegendItem { display: flex; align-items: center; gap: 0.4rem; font-size: 0.78rem; }
+.reports__pieDot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+.reports__pieLegendLabel { color: #555; min-width: 80px; }
+.reports__pieLegendValue { font-weight: 600; color: #333; margin-left: auto; }

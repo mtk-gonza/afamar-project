@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, Link } from "react-router-dom";
 import { api } from "../../api/client";
 import { FormActions } from "../../components/ui/FormActions";
-import type { Client } from "../../types";
+import { StatusBadge } from "../../components/ui/StatusBadge";
+import type { Client, ClientHistory, ClientHistoryItem } from "../../types";
 import styles from "./ClientForm.module.css";
 
 export function ClientForm() {
@@ -13,13 +14,20 @@ export function ClientForm() {
   const [form, setForm] = useState({
     name: "", phone: "", email: "", address: "", notes: "",
   });
+  const [history, setHistory] = useState<ClientHistory | null>(null);
   const [loading, setLoading] = useState(false);
+  const [dataLoading, setDataLoading] = useState(true);
 
   useEffect(() => {
     if (id) {
-      api.getClient(Number(id)).then((c: Client) =>
-        setForm({ name: c.name, phone: c.phone || "", email: c.email || "", address: c.address || "", notes: c.notes || "" })
-      );
+      Promise.all([
+        api.getClient(Number(id)).then((c: Client) =>
+          setForm({ name: c.name, phone: c.phone || "", email: c.email || "", address: c.address || "", notes: c.notes || "" })
+        ),
+        api.getClientHistory(Number(id)).then(setHistory),
+      ]).finally(() => setDataLoading(false));
+    } else {
+      setDataLoading(false);
     }
   }, [id]);
 
@@ -41,6 +49,8 @@ export function ClientForm() {
       setLoading(false);
     }
   };
+
+  if (dataLoading) return <div className={styles.clientForm}><p>Cargando...</p></div>;
 
   return (
     <div className={styles.clientForm}>
@@ -68,6 +78,85 @@ export function ClientForm() {
         </label>
         <FormActions loading={loading} />
       </form>
+
+      {isEdit && history && (
+        <div className={styles.clientForm__history}>
+          <fieldset className={styles.clientForm__fieldset}>
+            <legend>Historial</legend>
+            <div className={styles["clientForm__stats-grid"]}>
+              <div className={styles.clientForm__stat}>
+                <span className={styles.clientForm__statValue}>{history.total_budgets}</span>
+                <span className={styles.clientForm__statLabel}>Presupuestos</span>
+              </div>
+              <div className={styles.clientForm__stat}>
+                <span className={styles.clientForm__statValue}>{history.total_orders}</span>
+                <span className={styles.clientForm__statLabel}>Órdenes</span>
+              </div>
+              <div className={styles.clientForm__stat}>
+                <span className={styles.clientForm__statValue}>${history.total_billed.toLocaleString()}</span>
+                <span className={styles.clientForm__statLabel}>Facturado</span>
+              </div>
+              <div className={styles.clientForm__stat}>
+                <span className={styles.clientForm__statValue}>{history.last_order_number || "—"}</span>
+                <span className={styles.clientForm__statLabel}>Última OT</span>
+              </div>
+            </div>
+
+            <div className={styles["clientForm__history-lists"]}>
+              <div className={styles.clientForm__historyColumn}>
+                <h4>Últimas Órdenes</h4>
+                {history.recent_orders.length === 0 ? (
+                  <p className={styles.clientForm__empty}>Sin órdenes</p>
+                ) : (
+                  <ul className={styles.clientForm__historyList}>
+                    {history.recent_orders.map((o: ClientHistoryItem) => (
+                      <li key={o.id}>
+                        <Link to={`/admin/work-orders/${o.id}`}>
+                          <span className={styles.clientForm__historyNumber}>{o.number}</span>
+                          <StatusBadge status={o.status} />
+                          <span className={styles.clientForm__historyTotal}>${o.total.toLocaleString()}</span>
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+              <div className={styles.clientForm__historyColumn}>
+                <h4>Últimos Presupuestos</h4>
+                {history.recent_budgets.length === 0 ? (
+                  <p className={styles.clientForm__empty}>Sin presupuestos</p>
+                ) : (
+                  <ul className={styles.clientForm__historyList}>
+                    {history.recent_budgets.map((b: ClientHistoryItem) => (
+                      <li key={b.id}>
+                        <Link to={`/admin/budgets/${b.id}`}>
+                          <span className={styles.clientForm__historyNumber}>{b.number}</span>
+                          <StatusBadge status={b.status} />
+                          <span className={styles.clientForm__historyTotal}>${b.total.toLocaleString()}</span>
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            </div>
+          </fieldset>
+        </div>
+      )}
+
+      {isEdit && (
+        <div className={styles.clientForm__navLinks}>
+          <Link to={`/admin/budgets/new?client_id=${id}`} className={styles.clientForm__navBtn}>
+            + Nuevo Presupuesto
+          </Link>
+          <Link to={`/admin/work-orders/new?client_id=${id}`} className={styles.clientForm__navBtn}>
+            + Nueva Orden de Trabajo
+          </Link>
+          <Link to={`/admin/measurements`} className={styles.clientForm__navBtn}>
+            + Nueva Medición
+          </Link>
+        </div>
+      )}
     </div>
   );
 }

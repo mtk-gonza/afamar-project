@@ -1,13 +1,14 @@
-from datetime import datetime
+from datetime import date, datetime
+from typing import Optional
 
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 
-from app.core.dependencies import get_db
+from app.core.dependencies import get_current_user, get_db
 from app.core.responses import success
 from app.services.report import ReportService
 
-router = APIRouter()
+router = APIRouter(dependencies=[Depends(get_current_user)])
 
 
 @router.get("/dashboard")
@@ -17,22 +18,37 @@ def dashboard(db: Session = Depends(get_db)):
 
 
 @router.get("/budgets-by-status")
-def budgets_by_status(status: str, db: Session = Depends(get_db)):
+def budgets_by_status(
+    status: str,
+    date_from: Optional[date] = None,
+    date_to: Optional[date] = None,
+    db: Session = Depends(get_db),
+):
     service = ReportService(db)
-    return success(service.budgets_by_status(status))
+    return success(service.budgets_by_status(status, date_from, date_to))
 
 
 @router.get("/work-orders-by-status")
-def work_orders_by_status(status: str, db: Session = Depends(get_db)):
+def work_orders_by_status(
+    status: str,
+    date_from: Optional[date] = None,
+    date_to: Optional[date] = None,
+    db: Session = Depends(get_db),
+):
     service = ReportService(db)
-    return success(service.work_orders_by_status(status))
+    return success(service.work_orders_by_status(status, date_from, date_to))
 
 
 @router.get("/monthly-sales")
-def monthly_sales(year: int = Query(default=None), db: Session = Depends(get_db)):
+def monthly_sales(
+    year: int = Query(default=None),
+    date_from: Optional[date] = None,
+    date_to: Optional[date] = None,
+    db: Session = Depends(get_db),
+):
     year = year or datetime.now().year
     service = ReportService(db)
-    return success(service.monthly_sales(year))
+    return success(service.monthly_sales(year, date_from, date_to))
 
 
 @router.get("/most-used-materials")

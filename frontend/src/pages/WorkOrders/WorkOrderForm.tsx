@@ -4,8 +4,27 @@ import { api } from "../../api/client";
 import { useNotify } from "../../context/NotificationContext";
 import { ErrorBlock } from "../../components/ui/ErrorBlock";
 import { FormActions } from "../../components/ui/FormActions";
-import type { WorkOrder, Client, Material, MaterialColor, MaterialThickness, AppOption, PoolStock } from "../../types";
+import { SketchEditor } from "../../components/SketchEditor/SketchEditor";
+import { SignaturePad } from "../../components/SignaturePad/SignaturePad";
+import type { WorkOrder, Client, Material, MaterialColor, MaterialThickness, AppOption, PoolStock, SketchPage } from "../../types";
 import styles from "./WorkOrderForm.module.css";
+
+interface FabItemRow { _key: number; concept: string; detail: string; m2: number; material: string }
+
+let _fabKey = 1;
+const fabKey = () => _fabKey++;
+const emptyFabItem = (): FabItemRow => ({ _key: fabKey(), concept: "", detail: "", m2: 0, material: "" });
+
+const STATUS_ORDER = ["measurement", "budgeted", "in_production", "finished", "delivered"] as const;
+type OrderStatus = (typeof STATUS_ORDER)[number];
+
+const STATUS_LABELS: Record<string, string> = {
+  measurement: "Medición",
+  budgeted: "Presupuestado",
+  in_production: "En Producción",
+  finished: "Finalizado",
+  delivered: "Entregado",
+};
 
 export function WorkOrderForm() {
   const { id } = useParams();
@@ -22,7 +41,8 @@ export function WorkOrderForm() {
   const [pools, setPools] = useState<PoolStock[]>([]);
   const [form, setForm] = useState({
     client_id: 0,
-    status: "budgeted" as WorkOrder["status"],
+    client_name: "", client_phone: "", client_email: "", client_address: "",
+    status: "measurement",
     material: "", color: "", thickness: "", bacha: "", anafe: "",
     currency: "ARS", usd_rate: 0,
     subtotal: 0, transport: 0, installation: 0, discount: 0, total: 0,
@@ -36,6 +56,11 @@ export function WorkOrderForm() {
     pool_id: 0, pool_price: 0, pool_currency: "ARS",
     snapshot_name: "", snapshot_phone: "", snapshot_email: "", snapshot_address: "",
   });
+  const [nextNumber, setNextNumber] = useState("");
+  const [sketchPages, setSketchPages] = useState<SketchPage[]>([]);
+  const [digitalSignature, setDigitalSignature] = useState<string | null>(null);
+  const [fabItems, setFabItems] = useState<FabItemRow[]>([emptyFabItem()]);
+  const [budgetedItems, setBudgetedItems] = useState<FabItemRow[]>([emptyFabItem()]);
   const [dataLoading, setDataLoading] = useState(true);
   const [dataError, setDataError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -64,11 +89,16 @@ export function WorkOrderForm() {
   useEffect(() => {
     mounted.current = true;
     loadData();
+    api.getNextWorkOrderNumber().then((res) => {
+      if (mounted.current) setNextNumber(res.number);
+    }).catch(() => {});
     if (id) {
       api.getWorkOrder(Number(id)).then((o: WorkOrder) => {
         if (!mounted.current) return;
         setForm({
-          client_id: o.client_id, status: o.status,
+          client_id: o.client_id,
+          client_name: "", client_phone: "", client_email: "", client_address: "",
+          status: o.status,
           material: o.material || "", color: o.color || "", thickness: o.thickness || "",
           bacha: o.bacha || "", anafe: o.anafe || "",
           currency: o.currency, usd_rate: o.usd_rate,
@@ -84,6 +114,19 @@ export function WorkOrderForm() {
           snapshot_name: o.snapshot_name || "", snapshot_phone: o.snapshot_phone || "",
           snapshot_email: o.snapshot_email || "", snapshot_address: o.snapshot_address || "",
         });
+        if (o.digital_signature) setDigitalSignature(o.digital_signature);
+        try {
+          const parsed = JSON.parse(o.fabrication_details || "[]");
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            setFabItems(parsed.map((i: any) => ({ _key: fabKey(), concept: i.concept || "", detail: i.detail || "", m2: i.m2 || 0, material: i.material || "" })));
+          }
+        } catch {}
+        try {
+          const parsed = JSON.parse(o.budgeted_details || "[]");
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            setBudgetedItems(parsed.map((i: any) => ({ _key: fabKey(), concept: i.concept || "", detail: i.detail || "", m2: i.m2 || 0, material: i.material || "" })));
+          }
+        } catch {}
       }).catch(() => notify("Error al cargar la orden de trabajo", "error"));
     }
     return () => { mounted.current = false; };
@@ -94,16 +137,50 @@ export function WorkOrderForm() {
     setForm({ ...form, [e.target.name]: value });
   };
 
+  const updateFabItem = (idx: number, field: keyof Omit<FabItemRow, "_key">, value: string | number) => {
+    setFabItems((prev) => {
+      const next = [...prev];
+      next[idx] = { ...next[idx], [field]: value };
+      return next;
+    });
+  };
+  const addFabItem = () => setFabItems([...fabItems, emptyFabItem()]);
+  const removeFabItem = (idx: number) => fabItems.length > 1 && setFabItems(fabItems.filter((_, i) => i !== idx));
+
+  const updateBudgetedItem = (idx: number, field: keyof Omit<FabItemRow, "_key">, value: string | number) => {
+    setBudgetedItems((prev) => {
+      const next = [...prev];
+      next[idx] = { ...next[idx], [field]: value };
+      return next;
+    });
+  };
+  const addBudgetedItem = () => setBudgetedItems([...budgetedItems, emptyFabItem()]);
+  const removeBudgetedItem = (idx: number) => budgetedItems.length > 1 && setBudgetedItems(budgetedItems.filter((_, i) => i !== idx));
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!form.client_id && !form.client_name) {
+      notify("Seleccioná un cliente o ingresá un nombre", "error");
+      return;
+    }
     setSaving(true);
+    const onlyFab = fabItems.filter((i) => i.concept || i.detail);
+    const onlyBud = budgetedItems.filter((i) => i.concept || i.detail);
+    const payload = {
+      ...form,
+      digital_signature: digitalSignature,
+      fabrication_details: onlyFab.length > 0 ? JSON.stringify(onlyFab.map(({ _key: _, ...i }) => i)) : form.fabrication_details,
+      budgeted_details: onlyBud.length > 0 ? JSON.stringify(onlyBud.map(({ _key: _, ...i }) => i)) : form.budgeted_details,
+    };
     try {
       if (isEdit) {
-        await api.updateWorkOrder(Number(id), form);
+        await api.updateWorkOrder(Number(id), payload);
       } else {
-        await api.createWorkOrder(form);
+        await api.createWorkOrder(payload);
       }
       navigate("/admin/work-orders");
+    } catch {
+      notify("Error al guardar la orden de trabajo", "error");
     } finally {
       setSaving(false);
     }
@@ -120,22 +197,46 @@ export function WorkOrderForm() {
 
   return (
     <div className={styles.form}>
-      <h2 className={styles.form__title}>{isEdit ? "Editar Orden" : "Nueva Orden de Trabajo"}</h2>
+      <h2 className={styles.form__title}>
+        {isEdit ? "Editar Orden" : "Nueva Orden de Trabajo"}
+        {nextNumber && !isEdit && <span className={styles.form__nextNumber}> — Nº {nextNumber}</span>}
+      </h2>
       <form className={styles.form__grid} onSubmit={handleSubmit}>
 
         <label className={styles.form__label}>Cliente *
-          <select className={styles.form__input} name="client_id" value={form.client_id} onChange={handleChange} required disabled={dataLoading}>
+          <select className={styles.form__input} name="client_id" value={form.client_id} onChange={handleChange} disabled={dataLoading}>
             <option value={0}>{dataLoading ? "Cargando clientes..." : "Seleccionar..."}</option>
             {clients.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
           </select>
+          {form.client_id === 0 && (
+            <div className={styles.form__clientFields}>
+              <input className={styles.form__input} name="client_name" placeholder="Nombre del cliente *" value={form.client_name} onChange={handleChange} />
+              <input className={styles.form__input} name="client_phone" placeholder="Teléfono" value={form.client_phone} onChange={handleChange} />
+              <input className={styles.form__input} name="client_email" placeholder="Email" value={form.client_email} onChange={handleChange} />
+              <input className={styles.form__input} name="client_address" placeholder="Dirección" value={form.client_address} onChange={handleChange} />
+            </div>
+          )}
         </label>
 
         <label className={styles.form__label}>Estado
-          <select className={styles.form__input} name="status" value={form.status} onChange={handleChange}>
-            <option value="budgeted">Presupuestado</option>
-            <option value="in_production">En Producción</option>
-            <option value="finished">Finalizado</option>
-          </select>
+          <div className={styles.form__statusRow}>
+            {STATUS_ORDER.map((s) => {
+              const currentIdx = STATUS_ORDER.indexOf(form.status as OrderStatus);
+              const thisIdx = STATUS_ORDER.indexOf(s);
+              const canTransition = isEdit ? thisIdx >= currentIdx : true;
+              return (
+                <button
+                  key={s}
+                  type="button"
+                  className={`${styles.form__statusBtn} ${form.status === s ? styles["form__statusBtn--active"] : ""} ${!canTransition ? styles["form__statusBtn--disabled"] : ""}`}
+                  disabled={!canTransition}
+                  onClick={() => setForm({ ...form, status: s })}
+                >
+                  {STATUS_LABELS[s] || s}
+                </button>
+              );
+            })}
+          </div>
         </label>
 
         <label className={styles.form__label}>Prioridad
@@ -186,23 +287,59 @@ export function WorkOrderForm() {
         </fieldset>
 
         <fieldset className={`${styles.form__fieldset} ${styles["form__fieldset--full"]}`}>
+          <legend>Detalles presupuestados</legend>
+          <div className={styles.form__itemsHeader}>
+            <span>Concepto</span><span>Detalle</span><span>M²</span><span>Material</span><span></span>
+          </div>
+          {budgetedItems.map((item, i) => (
+            <div key={item._key} className={styles.form__itemRow}>
+              <input className={styles.form__input} value={item.concept} onChange={(e) => updateBudgetedItem(i, "concept", e.target.value)} placeholder="Concepto" />
+              <input className={styles.form__input} value={item.detail} onChange={(e) => updateBudgetedItem(i, "detail", e.target.value)} placeholder="Detalle" />
+              <input className={styles.form__input} type="number" step="0.01" value={item.m2 || ""} onChange={(e) => updateBudgetedItem(i, "m2", Number(e.target.value))} />
+              <input className={styles.form__input} value={item.material} onChange={(e) => updateBudgetedItem(i, "material", e.target.value)} placeholder="Material" />
+              <button type="button" className={styles.form__removeItem} onClick={() => removeBudgetedItem(i)}>✕</button>
+            </div>
+          ))}
+          <button type="button" className={styles.form__addItem} onClick={addBudgetedItem}>+ Agregar item</button>
+        </fieldset>
+
+        <fieldset className={`${styles.form__fieldset} ${styles["form__fieldset--full"]}`}>
           <legend>Detalles de fabricación</legend>
+          <div className={styles.form__itemsHeader}>
+            <span>Concepto</span><span>Detalle</span><span>M²</span><span>Material</span><span></span>
+          </div>
+          {fabItems.map((item, i) => (
+            <div key={item._key} className={styles.form__itemRow}>
+              <input className={styles.form__input} value={item.concept} onChange={(e) => updateFabItem(i, "concept", e.target.value)} placeholder="Concepto" />
+              <input className={styles.form__input} value={item.detail} onChange={(e) => updateFabItem(i, "detail", e.target.value)} placeholder="Detalle" />
+              <input className={styles.form__input} type="number" step="0.01" value={item.m2 || ""} onChange={(e) => updateFabItem(i, "m2", Number(e.target.value))} />
+              <input className={styles.form__input} value={item.material} onChange={(e) => updateFabItem(i, "material", e.target.value)} placeholder="Material" />
+              <button type="button" className={styles.form__removeItem} onClick={() => removeFabItem(i)}>✕</button>
+            </div>
+          ))}
+          <button type="button" className={styles.form__addItem} onClick={addFabItem}>+ Agregar item</button>
+        </fieldset>
+
+        <fieldset className={`${styles.form__fieldset} ${styles["form__fieldset--full"]}`}>
+          <legend>Observaciones</legend>
           <label className={styles.form__label}>
             Observaciones de diseño
             <textarea className={styles.form__textarea} name="design_observations" value={form.design_observations} onChange={handleChange} />
           </label>
           <label className={styles.form__label}>
-            Detalles presupuestados
-            <textarea className={styles.form__textarea} name="budgeted_details" value={form.budgeted_details} onChange={handleChange} />
-          </label>
-          <label className={styles.form__label}>
-            Detalles de fabricación
-            <textarea className={styles.form__textarea} name="fabrication_details" value={form.fabrication_details} onChange={handleChange} />
-          </label>
-          <label className={styles.form__label}>
             Observaciones importantes
             <textarea className={styles.form__textarea} name="important_observations" value={form.important_observations} onChange={handleChange} />
           </label>
+        </fieldset>
+
+        <fieldset className={`${styles.form__fieldset} ${styles["form__fieldset--full"]}`}>
+          <legend>Croquis / Diseño</legend>
+          <SketchEditor croquis={sketchPages} onChange={setSketchPages} />
+        </fieldset>
+
+        <fieldset className={`${styles.form__fieldset} ${styles["form__fieldset--full"]}`}>
+          <legend>Firma digital</legend>
+          <SignaturePad value={digitalSignature} onChange={setDigitalSignature} />
         </fieldset>
 
         <fieldset className={`${styles.form__fieldset} ${styles["form__fieldset--full"]}`}>

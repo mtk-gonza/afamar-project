@@ -66,3 +66,97 @@
   font-size: 0.9rem;
   cursor: pointer;
 }
+
+.clientForm__history {
+  margin-top: 2rem;
+}
+
+.clientForm__fieldset {
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  padding: 1.25rem;
+}
+
+.clientForm__stats-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.clientForm__stat {
+  text-align: center;
+  background: #f8f9fa;
+  border-radius: 8px;
+  padding: 1rem 0.5rem;
+}
+
+.clientForm__statValue {
+  display: block;
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: #1a1a2e;
+}
+
+.clientForm__statLabel {
+  display: block;
+  font-size: 0.75rem;
+  color: #666;
+  margin-top: 0.25rem;
+}
+
+.clientForm__history-lists {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+}
+
+.clientForm__historyColumn h4 {
+  font-size: 0.85rem;
+  margin: 0 0 0.75rem;
+  color: #555;
+}
+
+.clientForm__historyList {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.clientForm__historyList li a {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.4rem 0.5rem;
+  text-decoration: none;
+  color: #333;
+  border-radius: 4px;
+  font-size: 0.85rem;
+  transition: background 0.15s;
+}
+
+.clientForm__historyList li a:hover {
+  background: #f0f0f0;
+}
+
+.clientForm__historyNumber {
+  font-weight: 600;
+  min-width: 80px;
+}
+
+.clientForm__historyTotal {
+  margin-left: auto;
+  color: #666;
+}
+
+.clientForm__empty {
+  color: #999;
+  font-style: italic;
+  font-size: 0.85rem;
+}
+.clientForm__navLinks { display: flex; gap: 0.75rem; margin-top: 1.5rem; flex-wrap: wrap; }
+.clientForm__navBtn { display: inline-block; background: #1a1a2e; color: #fff; padding: 0.55rem 1.2rem; border-radius: 6px; text-decoration: none; font-size: 0.85rem; font-weight: 500; transition: background 0.15s; }
+.clientForm__navBtn:hover { background: #2d2d4e; }

@@ -1,0 +1,244 @@
+.sketchEditor {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  background: #f0f0f0;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  overflow: hidden;
+  user-select: none;
+}
+
+.sketchEditor__body {
+  display: flex;
+  flex-direction: row;
+}
+
+.sketchEditor__toolbar {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  background: #e8e8e8;
+  padding: 4px;
+  border-right: 1px solid #ccc;
+  flex-shrink: 0;
+}
+
+.sketchEditor__tool {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  background: transparent;
+  cursor: pointer;
+  font-size: 1rem;
+  color: #444;
+  transition: background 0.15s, border-color 0.15s;
+  position: relative;
+}
+
+.sketchEditor__tool:hover {
+  background: #ddd;
+  border-color: #bbb;
+}
+
+.sketchEditor__tool--active {
+  background: #1a1a2e;
+  border-color: #1a1a2e;
+  color: #fff;
+}
+
+.sketchEditor__tool--active:hover {
+  background: #2a2a4e;
+}
+
+.sketchEditor__tooltip {
+  display: none;
+  position: absolute;
+  left: 100%;
+  top: 50%;
+  transform: translateY(-50%);
+  margin-left: 6px;
+  padding: 3px 8px;
+  background: #333;
+  color: #fff;
+  font-size: 0.72rem;
+  white-space: nowrap;
+  border-radius: 4px;
+  z-index: 10;
+  pointer-events: none;
+}
+
+.sketchEditor__tool:hover .sketchEditor__tooltip {
+  display: block;
+}
+
+.sketchEditor__canvasArea {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px;
+  background: #f0f0f0;
+  position: relative;
+  overflow: auto;
+}
+
+.sketchEditor__canvas {
+  display: block;
+  background: #fff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  cursor: crosshair;
+}
+
+.sketchEditor__textOverlay {
+  position: absolute;
+  z-index: 5;
+}
+
+.sketchEditor__textInput {
+  width: 160px;
+  padding: 4px 8px;
+  border: 2px solid #1a1a2e;
+  border-radius: 4px;
+  font-size: 0.85rem;
+  font-family: inherit;
+  outline: none;
+  background: #fff;
+}
+
+.sketchEditor__pages {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  background: #e0e0e0;
+  border-bottom: 1px solid #ccc;
+  padding: 0 4px;
+  overflow-x: auto;
+}
+
+.sketchEditor__pageTab {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 12px;
+  cursor: pointer;
+  font-size: 0.78rem;
+  color: #555;
+  border: 1px solid transparent;
+  border-bottom: none;
+  border-radius: 4px 4px 0 0;
+  background: transparent;
+  white-space: nowrap;
+  transition: background 0.15s;
+}
+
+.sketchEditor__pageTab:hover {
+  background: #d0d0d0;
+}
+
+.sketchEditor__pageTab--active {
+  background: #fff;
+  color: #1a1a2e;
+  font-weight: 600;
+  border-color: #ccc;
+}
+
+.sketchEditor__pageTabInput {
+  width: 80px;
+  padding: 2px 4px;
+  border: 1px solid #1a1a2e;
+  border-radius: 3px;
+  font-size: 0.78rem;
+  font-family: inherit;
+  outline: none;
+}
+
+.sketchEditor__pageBtn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 0.7rem;
+  color: #888;
+  padding: 0 2px;
+  line-height: 1;
+  border-radius: 3px;
+  transition: background 0.15s, color 0.15s;
+}
+
+.sketchEditor__pageBtn:hover {
+  background: rgba(0, 0, 0, 0.1);
+  color: #333;
+}
+
+.sketchEditor__pageBtn--del:hover {
+  background: #e74c3c;
+  color: #fff;
+}
+
+.sketchEditor__addPage {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font-size: 1.1rem;
+  color: #666;
+  border-radius: 4px;
+  margin-left: 4px;
+  transition: background 0.15s;
+}
+
+.sketchEditor__addPage:hover {
+  background: #ccc;
+}
+
+.sketchEditor__bottom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 12px;
+  background: #e8e8e8;
+  border-top: 1px solid #ccc;
+  font-size: 0.78rem;
+  color: #666;
+}
+
+.sketchEditor__zoom {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.sketchEditor__zoomBtn {
+  background: #fff;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  padding: 2px 8px;
+  cursor: pointer;
+  font-size: 0.78rem;
+  color: #444;
+  transition: background 0.15s;
+}
+
+.sketchEditor__zoomBtn:hover {
+  background: #ddd;
+}
+
+.sketchEditor__zoomBtn--active {
+  background: #1a1a2e;
+  border-color: #1a1a2e;
+  color: #fff;
+}
+
+.sketchEditor__info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}

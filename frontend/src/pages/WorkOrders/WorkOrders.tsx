@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { api } from "../../api/client";
+import { useNotify } from "../../context/NotificationContext";
 import { useConfirm } from "../../components/ui/useConfirm";
 import { PageHeader } from "../../components/ui/PageHeader";
 import { LoadingSpinner } from "../../components/ui/LoadingSpinner";
@@ -13,6 +14,7 @@ import styles from "./WorkOrders.module.css";
 
 export function WorkOrders() {
   const navigate = useNavigate();
+  const notify = useNotify();
   const { confirm, dialog } = useConfirm();
   const [items, setItems] = useState<WorkOrder[]>([]);
   const [loading, setLoading] = useState(true);
@@ -32,6 +34,15 @@ export function WorkOrders() {
   }, []);
 
   useEffect(() => { load(); }, [load]);
+
+  const handleSendWhatsApp = async (o: WorkOrder) => {
+    try {
+      await api.sendWorkOrderWhatsApp(o.id);
+      notify("WhatsApp enviado", "success");
+    } catch (e: any) {
+      notify(e.message || "Error al enviar WhatsApp", "error");
+    }
+  };
 
   const handleDelete = async (id: number, num: string) => {
     if (!(await confirm(`¿Eliminar orden ${num}?`, "Eliminar", true))) return;
@@ -90,7 +101,9 @@ export function WorkOrders() {
                 <td>{o.total_usd > 0 ? `US$ ${o.total_usd.toFixed(2)}` : "-"}</td>
                 <td>{o.balance_due > 0 ? `$ ${o.balance_due.toFixed(2)}` : "Pagado"}</td>
                 <td>{o.delivery_date ? new Date(o.delivery_date).toLocaleDateString() : "-"}</td>
-                <TableActions onEdit={() => navigate(`/admin/work-orders/${o.id}/edit`)} onDelete={() => handleDelete(o.id, o.number)} />
+                <TableActions onEdit={() => navigate(`/admin/work-orders/${o.id}/edit`)} onDelete={() => handleDelete(o.id, o.number)}>
+                  <button className={styles.workOrders__actionBtn} title="Enviar por WhatsApp" onClick={() => handleSendWhatsApp(o)}>WA</button>
+                </TableActions>
               </tr>
             ))}
           </tbody>

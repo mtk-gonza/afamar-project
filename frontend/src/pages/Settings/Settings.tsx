@@ -18,7 +18,7 @@ export function Settings() {
   // ── Tab: General ──
   const [settings, setSettings] = useState<SettingsData>({
     company_name: "", company_address: "", company_phone: "", company_email: "", company_logo: "",
-    pdf_footer: "", budget_terms: "", delivery_terms: "", warranty_text: "",
+    pdf_footer: "", budget_terms: "", delivery_terms: "", warranty_text: "", observaciones_automaticas: "",
   });
   const [saved, setSaved] = useState(false);
   const [_loadError, setLoadError] = useState(false);
@@ -197,6 +197,10 @@ export function Settings() {
             <label className={styles.settings__label}>
               Texto de garantía
               <textarea className={styles.settings__textarea} value={settings.warranty_text} onChange={(e) => setSettings((s) => ({ ...s, warranty_text: e.target.value }))} />
+            </label>
+            <label className={styles.settings__label}>
+              Observaciones automáticas
+              <textarea className={styles.settings__textarea} value={settings.observaciones_automaticas} onChange={(e) => setSettings((s) => ({ ...s, observaciones_automaticas: e.target.value }))} placeholder="Texto que se agrega automáticamente a las observaciones del presupuesto" />
             </label>
           </fieldset>
 

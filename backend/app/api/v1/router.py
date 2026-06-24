@@ -4,11 +4,13 @@ from app.api.v1 import (
     auth,
     budgets,
     clients,
+    daily_cash,
     materials,
     measurements,
     online_budgets,
     options,
     pool_stock,
+    references,
     reports,
     search,
     settings,
@@ -31,3 +33,5 @@ router.include_router(measurements.router, prefix="/measurements", tags=["Measur
 router.include_router(online_budgets.router, prefix="/online-budgets", tags=["Online Budgets"])
 router.include_router(whatsapp.router, prefix="/whatsapp", tags=["WhatsApp"])
 router.include_router(search.router, prefix="/search", tags=["Search"])
+router.include_router(daily_cash.router)
+router.include_router(references.router, prefix="/references", tags=["References"])

@@ -11,7 +11,7 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app.api.v1.router import router as api_router
 from app.core.config import settings
-from app.core.database import Base, engine
+from app.core.database import Base, engine, sync_schema
 from app.core.logging import setup_logging
 from app.core.responses import error
 from app.models import *  # noqa: F401, F403
@@ -36,6 +36,7 @@ def run_migrations():
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     Base.metadata.create_all(bind=engine)
+    sync_schema()
     alembic_cfg = AlembicConfig("alembic.ini")
     try:
         command.stamp(alembic_cfg, "head")

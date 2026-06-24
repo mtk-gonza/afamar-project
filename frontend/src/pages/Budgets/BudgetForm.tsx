@@ -7,12 +7,12 @@ import { FormActions } from "../../components/ui/FormActions";
 import type { Budget, Client, Material, MaterialColor, MaterialThickness, AppOption, PoolStock } from "../../types";
 import styles from "./BudgetForm.module.css";
 
-interface ItemRow { _key: number; description: string; quantity: number; unit_price: number; total: number; length: number; width: number; m2: number; price_m2: number }
+interface ItemRow { _key: number; sector: string; description: string; quantity: number; unit_price: number; total: number; length: number; width: number; m2: number; price_m2: number }
 interface AdicionalRow { _key: number; concept: string; detail: string; quantity: number; unit_price: number; total: number }
 
 let _nextKey = 1;
 const key = () => _nextKey++;
-const emptyItem = (): ItemRow => ({ _key: key(), description: "", quantity: 1, unit_price: 0, total: 0, length: 0, width: 0, m2: 0, price_m2: 0 });
+const emptyItem = (sector = ""): ItemRow => ({ _key: key(), sector, description: "", quantity: 1, unit_price: 0, total: 0, length: 0, width: 0, m2: 0, price_m2: 0 });
 const emptyAdicional = (): AdicionalRow => ({ _key: key(), concept: "", detail: "", quantity: 1, unit_price: 0, total: 0 });
 
 export function BudgetForm() {
@@ -49,6 +49,14 @@ export function BudgetForm() {
   const [observations, setObservations] = useState({ design: "", important: "", notes: "", fabrication: "" });
   const [snapshot, setSnapshot] = useState({ name: "", phone: "", email: "", address: "" });
   const [payment, setPayment] = useState({ payment_method: "", validity_days: 15, estimated_delivery: "", estimated_date: "" });
+  const [nextNumber, setNextNumber] = useState("");
+  const [clientName, setClientName] = useState("");
+  const [clientPhone, setClientPhone] = useState("");
+  const [clientEmail, setClientEmail] = useState("");
+  const [clientAddress, setClientAddress] = useState("");
+  const [discountType, setDiscountType] = useState("porcentaje");
+  const [cardSurchargePct, setCardSurchargePct] = useState(0);
+  const [fabTab, setFabTab] = useState("ZÓCALO");
   const [dataLoading, setDataLoading] = useState(true);
   const [dataError, setDataError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -56,8 +64,10 @@ export function BudgetForm() {
   const subtotal = useMemo(() => items.reduce((s, i) => s + i.total, 0), [items]);
   const subtotalAdicionales = useMemo(() => adicionales.reduce((s, a) => s + a.total, 0), [adicionales]);
   const subtotalTotal = subtotal + subtotalAdicionales;
-  const discountAmt = subtotalTotal * (discountPct / 100);
-  const totalArs = subtotalTotal - discountAmt + transport + installation + poolPrice;
+  const discountAmt = discountType === "porcentaje" ? subtotalTotal * (discountPct / 100) : discountPct;
+  const isCard = payment.payment_method?.toLowerCase().includes("tarjeta") || payment.payment_method === "card";
+  const cardSurcharge = isCard ? (subtotalTotal - discountAmt) * (cardSurchargePct / 100) : 0;
+  const totalArs = subtotalTotal - discountAmt + transport + installation + poolPrice + cardSurcharge;
   const totalUsd = usdRate > 0 ? totalArs / usdRate : 0;
   const balanceDue = totalArs - depositReceived;
 
@@ -101,12 +111,19 @@ export function BudgetForm() {
   useEffect(() => {
     mounted.current = true;
     loadData();
+    if (!isEdit) {
+      api.getNextBudgetNumber().then((res) => { if (mounted.current) setNextNumber(res.number); }).catch(() => {});
+    }
     if (id) {
       api.getBudget(Number(id)).then((b: Budget) => {
         if (!mounted.current) return;
         setClientId(b.client_id);
+        setClientName(b.snapshot_name || "");
+        setClientPhone(b.snapshot_phone || "");
+        setClientEmail(b.snapshot_email || "");
+        setClientAddress(b.snapshot_address || "");
         setSpecs({ material: b.material || "", color: b.color || "", thickness: b.thickness || "", front: b.front || "", finish: b.finish || "", bacha: b.bacha || "", anafe: b.anafe || "", perforations: b.perforations || "" });
-        setItems(b.items.map((i) => ({ _key: key(), description: i.description, quantity: i.quantity, unit_price: i.unit_price, total: i.total, length: i.length, width: i.width, m2: i.m2, price_m2: i.price_m2 })));
+        setItems(b.items.map((i) => ({ _key: key(), sector: i.sector || "", description: i.description, quantity: i.quantity, unit_price: i.unit_price, total: i.total, length: i.length, width: i.width, m2: i.m2, price_m2: i.price_m2 })));
         setAdicionales((b.adicionales || []).map((a) => ({ _key: key(), concept: a.concept || "", detail: a.detail || "", quantity: a.quantity, unit_price: a.unit_price, total: a.total })));
         setCurrency(b.currency);
         setUsdRate(b.usd_rate);
@@ -179,10 +196,14 @@ export function BudgetForm() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!clientId) { notify("Seleccioná un cliente", "error"); return; }
+    if (!clientId && !clientName) { notify("Seleccioná un cliente o ingresá un nombre", "error"); return; }
     setSaving(true);
-    const payload = {
-      client_id: clientId,
+    const payload: Record<string, unknown> = {
+      ...(clientId > 0 ? { client_id: clientId } : {}),
+      client_name: clientName || undefined,
+      client_phone: clientPhone || undefined,
+      client_email: clientEmail || undefined,
+      client_address: clientAddress || undefined,
       ...specs,
       currency, usd_rate: usdRate,
       subtotal_materials: subtotal,
@@ -190,6 +211,7 @@ export function BudgetForm() {
       subtotal: subtotalTotal,
       transport, installation,
       discount: discountPct,
+      discount_type: discountType,
       total: totalArs,
       total_usd: totalUsd,
       deposit_received: depositReceived,
@@ -211,6 +233,7 @@ export function BudgetForm() {
       snapshot_phone: snapshot.phone,
       snapshot_email: snapshot.email,
       snapshot_address: snapshot.address,
+      card_surcharge_pct: cardSurchargePct > 0 ? cardSurchargePct : undefined,
       items: items.filter((i) => i.description).map(({ _key: _, ...i }) => i),
       adicionales: adicionales.filter((a) => a.concept || a.detail).map(({ _key: _, ...a }) => a),
     };
@@ -232,6 +255,7 @@ export function BudgetForm() {
     return (
       <div className={styles.budgetForm}>
         <h2 className={styles.budgetForm__title}>{isEdit ? "Editar Presupuesto" : "Nuevo Presupuesto"}</h2>
+        {nextNumber && <span className={styles.budgetForm__nextNumber}>Próximo número: {nextNumber}</span>}
         <ErrorBlock message={dataError} onRetry={loadData} />
       </div>
     );
@@ -240,14 +264,29 @@ export function BudgetForm() {
   return (
     <div className={styles.budgetForm}>
       <h2 className={styles.budgetForm__title}>{isEdit ? "Editar Presupuesto" : "Nuevo Presupuesto"}</h2>
+      {!isEdit && nextNumber && <span className={styles.budgetForm__nextNumber}>Próximo número: {nextNumber}</span>}
       <form className={styles.budgetForm__form} onSubmit={handleSubmit}>
         {/* Cliente */}
         <fieldset className={styles.budgetForm__fieldset}>
           <legend>Cliente</legend>
-          <select className={styles.budgetForm__input} value={clientId} onChange={(e) => setClientId(Number(e.target.value))} required disabled={dataLoading}>
+          <select className={styles.budgetForm__input} value={clientId} onChange={(e) => { setClientId(Number(e.target.value)); if (Number(e.target.value) > 0) { const c = clients.find((cl) => cl.id === Number(e.target.value)); if (c) { setClientName(c.name); setClientPhone(c.phone || ""); setClientEmail(c.email || ""); setClientAddress(c.address || ""); } } }} disabled={dataLoading}>
             <option value={0}>{dataLoading ? "Cargando clientes..." : "Seleccionar cliente..."}</option>
             {clients.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
           </select>
+          <div className={styles.budgetForm__grid2} style={{ marginTop: "0.5rem" }}>
+            <label className={styles.budgetForm__label}>Nombre
+              <input className={styles.budgetForm__input} value={clientName} onChange={(e) => setClientName(e.target.value)} placeholder={clientId > 0 ? "Usando cliente existente" : "Nombre del cliente"} />
+            </label>
+            <label className={styles.budgetForm__label}>Teléfono
+              <input className={styles.budgetForm__input} value={clientPhone} onChange={(e) => setClientPhone(e.target.value)} />
+            </label>
+            <label className={styles.budgetForm__label}>Email
+              <input className={styles.budgetForm__input} value={clientEmail} onChange={(e) => setClientEmail(e.target.value)} />
+            </label>
+            <label className={styles.budgetForm__label}>Dirección
+              <input className={styles.budgetForm__input} value={clientAddress} onChange={(e) => setClientAddress(e.target.value)} />
+            </label>
+          </div>
         </fieldset>
 
         {/* Especificaciones */}
@@ -324,6 +363,57 @@ export function BudgetForm() {
           <button type="button" className={styles.budgetForm__addItem} onClick={addItem}>+ Agregar item</button>
         </fieldset>
 
+        {/* Detalles de Fabricación */}
+        <fieldset className={styles.budgetForm__fieldset}>
+          <legend>Detalles de Fabricación</legend>
+          <div className={styles.budgetForm__fabTabs}>
+            {["ZÓCALO", "FRENTE", "TRAFOROS", "OTRA"].map((tab) => (
+              <button key={tab} type="button" className={`${styles.budgetForm__fabTab} ${fabTab === tab ? styles["budgetForm__fabTab--active"] : ""}`} onClick={() => setFabTab(tab)}>
+                {tab}
+              </button>
+            ))}
+          </div>
+          {fabTab !== "OTRA" ? (
+            <div>
+              <div className={styles.budgetForm__itemsHeader}>
+                <span>Descripción</span><span>Largo</span><span>Ancho</span><span>M²</span><span>Cant.</span><span>$ / M²</span><span>P. Unit</span><span>Total</span><span></span>
+              </div>
+              {items.filter((i) => i.sector === fabTab).map((item) => {
+                const idx = items.findIndex((i) => i._key === item._key);
+                return (
+                  <div key={item._key} className={styles.budgetForm__itemRow}>
+                    <input className={styles.budgetForm__input} value={item.description} onChange={(e) => updateItem(idx, "description", e.target.value)} placeholder="Descripción" />
+                    <input className={styles.budgetForm__input} type="number" value={item.length || ""} onChange={(e) => updateItem(idx, "length", Number(e.target.value))} />
+                    <input className={styles.budgetForm__input} type="number" value={item.width || ""} onChange={(e) => updateItem(idx, "width", Number(e.target.value))} />
+                    <span className={styles.budgetForm__itemTotal}>{item.m2.toFixed(4)}</span>
+                    <input className={styles.budgetForm__input} type="number" value={item.quantity} onChange={(e) => updateItem(idx, "quantity", Number(e.target.value))} />
+                    <input className={styles.budgetForm__input} type="number" value={item.price_m2 || ""} onChange={(e) => updateItem(idx, "price_m2", Number(e.target.value))} />
+                    <input className={styles.budgetForm__input} type="number" value={item.unit_price} onChange={(e) => updateItem(idx, "unit_price", Number(e.target.value))} />
+                    <span className={styles.budgetForm__itemTotal}>$ {item.total.toFixed(2)}</span>
+                    <button type="button" className={styles.budgetForm__removeItem} onClick={() => setItems(items.filter((i) => i._key !== item._key))}>✕</button>
+                  </div>
+                );
+              })}
+              <button type="button" className={styles.budgetForm__addItem} onClick={() => setItems([...items, emptyItem(fabTab)])}>+ Agregar {fabTab.toLowerCase()}</button>
+            </div>
+          ) : (
+            <div>
+              {items.filter((i) => i.sector === "OTRA").map((item) => {
+                const idx = items.findIndex((i) => i._key === item._key);
+                return (
+                  <div key={item._key} className={styles.budgetForm__itemRow}>
+                    <input className={styles.budgetForm__input} value={item.description} onChange={(e) => updateItem(idx, "description", e.target.value)} placeholder="Descripción" />
+                    <input className={styles.budgetForm__input} type="number" value={item.unit_price} onChange={(e) => updateItem(idx, "unit_price", Number(e.target.value))} placeholder="P. Unit" />
+                    <span className={styles.budgetForm__itemTotal}>$ {item.total.toFixed(2)}</span>
+                    <button type="button" className={styles.budgetForm__removeItem} onClick={() => setItems(items.filter((i) => i._key !== item._key))}>✕</button>
+                  </div>
+                );
+              })}
+              <button type="button" className={styles.budgetForm__addItem} onClick={() => setItems([...items, { ...emptyItem("OTRA"), quantity: 1, unit_price: 0 }])}>+ Agregar otra</button>
+            </div>
+          )}
+        </fieldset>
+
         {/* Adicionales */}
         <fieldset className={styles.budgetForm__fieldset}>
           <legend>Adicionales</legend>
@@ -380,8 +470,14 @@ export function BudgetForm() {
             <label className={styles.budgetForm__label}>Cotización USD
               <input className={styles.budgetForm__input} type="number" value={usdRate} onChange={(e) => setUsdRate(Number(e.target.value))} />
             </label>
-            <label className={styles.budgetForm__label}>Descuento %
-              <input className={styles.budgetForm__input} type="number" value={discountPct} onChange={(e) => setDiscountPct(Number(e.target.value))} min="0" max="100" />
+            <label className={styles.budgetForm__label}>Descuento
+              <input className={styles.budgetForm__input} type="number" value={discountPct} onChange={(e) => setDiscountPct(Number(e.target.value))} min="0" />
+            </label>
+            <label className={styles.budgetForm__label}>Tipo de Descuento
+              <select className={styles.budgetForm__input} value={discountType} onChange={(e) => setDiscountType(e.target.value)}>
+                <option value="porcentaje">Porcentaje (%)</option>
+                <option value="fijo">Fijo ($)</option>
+              </select>
             </label>
             <label className={styles.budgetForm__label}>Transporte
               <input className={styles.budgetForm__input} type="number" value={transport} onChange={(e) => setTransport(Number(e.target.value))} />
@@ -401,10 +497,14 @@ export function BudgetForm() {
             <label className={styles.budgetForm__label}>Cuotas
               <input className={styles.budgetForm__input} type="number" value={installments} onChange={(e) => setInstallments(Number(e.target.value))} min="1" />
             </label>
+            <label className={styles.budgetForm__label}>Recargo por Tarjeta %
+              <input className={styles.budgetForm__input} type="number" value={cardSurchargePct} onChange={(e) => setCardSurchargePct(Number(e.target.value))} min="0" step="0.1" />
+            </label>
           </div>
           <div className={styles.budgetForm__totals}>
             <span>Subtotal: $ {subtotalTotal.toFixed(2)}</span>
-            {discountPct > 0 && <span>Desc.: -$ {discountAmt.toFixed(2)}</span>}
+            {discountAmt > 0 && <span>Desc.: -$ {discountAmt.toFixed(2)}</span>}
+            {cardSurcharge > 0 && <span>Recargo: +$ {cardSurcharge.toFixed(2)}</span>}
             <span>Total: $ {totalArs.toFixed(2)}</span>
             {currency === "ARS" && <span>USD: US$ {totalUsd.toFixed(2)}</span>}
             <span>Saldo: $ {balanceDue.toFixed(2)}</span>

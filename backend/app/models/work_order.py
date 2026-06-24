@@ -4,6 +4,7 @@ from sqlalchemy import Boolean, Date, DateTime, Float, ForeignKey, Integer, Stri
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database import Base
+from app.models.reference import WorkOrderStatus, PaymentMethod, PriorityLevel, FinishType
 
 
 class WorkOrder(Base):
@@ -14,8 +15,13 @@ class WorkOrder(Base):
     client_id: Mapped[int] = mapped_column(ForeignKey("clients.id"), nullable=False)
     budget_id: Mapped[int] = mapped_column(ForeignKey("budgets.id"), nullable=True)
 
-    status: Mapped[str] = mapped_column(String(20), default="budgeted")
+    status: Mapped[str] = mapped_column(String(20), default="MEDICION")
     origin: Mapped[str] = mapped_column(String(30), default="Manual")
+
+    status_id: Mapped[int | None] = mapped_column(ForeignKey("work_order_statuses.id"), nullable=True)
+    payment_method_id: Mapped[int | None] = mapped_column(ForeignKey("payment_methods.id"), nullable=True)
+    priority_id: Mapped[int | None] = mapped_column(ForeignKey("priority_levels.id"), nullable=True)
+    finish_id: Mapped[int | None] = mapped_column(ForeignKey("finish_types.id"), nullable=True)
 
     material: Mapped[str] = mapped_column(String(200), nullable=True)
     material_price_m2: Mapped[float] = mapped_column(Float, default=0.0)
@@ -32,6 +38,8 @@ class WorkOrder(Base):
     transport: Mapped[float] = mapped_column(Float, default=0.0)
     installation: Mapped[float] = mapped_column(Float, default=0.0)
     discount: Mapped[float] = mapped_column(Float, default=0.0)
+    discount_percentage: Mapped[float] = mapped_column(Float, default=0.0)
+    discount_fixed_amount: Mapped[float] = mapped_column(Float, default=0.0)
     total: Mapped[float] = mapped_column(Float, default=0.0)
     subtotal_usd: Mapped[float] = mapped_column(Float, default=0.0)
     transport_usd: Mapped[float] = mapped_column(Float, default=0.0)
@@ -75,6 +83,11 @@ class WorkOrder(Base):
 
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now(), onupdate=func.now())
+
+    status_obj: Mapped["WorkOrderStatus"] = relationship("WorkOrderStatus", back_populates="work_orders", foreign_keys=[status_id])
+    payment_method_obj: Mapped["PaymentMethod"] = relationship("PaymentMethod", back_populates="work_orders", foreign_keys=[payment_method_id])
+    priority_obj: Mapped["PriorityLevel"] = relationship("PriorityLevel", back_populates="work_orders", foreign_keys=[priority_id])
+    finish_obj: Mapped["FinishType"] = relationship("FinishType", back_populates="work_orders", foreign_keys=[finish_id])
 
     client = relationship("Client", back_populates="work_orders")
     budget = relationship("Budget", back_populates="work_order")

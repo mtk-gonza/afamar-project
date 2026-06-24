@@ -20,6 +20,7 @@ const navGroups = [
     label: "Inventario",
     items: [
       { to: "/admin/materials", label: "Materiales" },
+      { to: "/admin/material-consultant", label: "Consultor" },
       { to: "/admin/pool-stock", label: "Piletas" },
     ],
   },
@@ -29,6 +30,8 @@ const navGroups = [
       { to: "/admin/measurements", label: "Mediciones" },
       { to: "/admin/online-budgets", label: "Online" },
       { to: "/admin/calculator", label: "Calculadora" },
+      { to: "/admin/cash", label: "Caja Diaria" },
+      { to: "/admin/cash/history", label: "Historial Caja" },
     ],
   },
   {

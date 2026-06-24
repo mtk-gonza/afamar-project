@@ -92,6 +92,7 @@ class TestWorkOrders:
             "subtotal": 100,
             "total": 100,
         })
+        client.put("/api/v1/budgets/1", json={"status": "approved"})
         r = client.post("/api/v1/work-orders/from-budget/1")
         assert r.status_code == 201
         assert r.json()["data"]["number"].startswith("A-")
@@ -108,3 +109,59 @@ class TestSettings:
         r = client.put("/api/v1/settings", json={"company_name": "Test Corp"})
         assert r.status_code == 200
         assert r.json()["data"]["company_name"] == "Test Corp"
+
+
+class TestCash:
+    def test_get_or_create_daily(self, client):
+        r = client.get("/api/v1/cash/daily", params={"query_date": "2026-06-23"})
+        assert r.status_code == 200
+        d = r.json()
+        assert d["date"] == "2026-06-23"
+        assert d["total_income"] == 0
+        assert d["is_closed"] is False
+
+    def test_create_movement(self, client):
+        client.get("/api/v1/cash/daily", params={"query_date": "2026-06-23"})
+
+        r = client.post("/api/v1/cash/movements", json={
+            "date": "2026-06-23",
+            "type": "INCOME",
+            "amount": 5000,
+            "description": "Test income",
+            "payment_method": "Efectivo",
+        })
+        assert r.status_code == 200
+        assert r.json()["amount"] == 5000
+
+        r = client.get("/api/v1/cash/daily", params={"query_date": "2026-06-23"})
+        assert r.json()["total_income"] == 5000
+        assert r.json()["current_balance"] == 5000
+
+    def test_close_daily_cash(self, client):
+        client.post("/api/v1/cash/movements", json={
+            "date": "2026-06-23",
+            "type": "INCOME",
+            "amount": 1000,
+            "description": "Close test",
+        })
+        r = client.post("/api/v1/cash/daily/close", json={"date": "2026-06-23"})
+        assert r.status_code == 200
+        assert r.json()["is_closed"] is True
+
+
+class TestWhatsAppWorkOrder:
+    def test_send_work_order_whatsapp_no_phone(self, client, seed_db):
+        client.post("/api/v1/clients", json={"name": "WO WA Client"})
+        client.post("/api/v1/budgets", json={
+            "client_id": 1,
+            "items": [{"description": "Item", "quantity": 1, "unit_price": 100, "total": 100}],
+            "subtotal": 100,
+            "total": 100,
+        })
+        client.put("/api/v1/budgets/1", json={"status": "approved"})
+        r = client.post("/api/v1/work-orders/from-budget/1")
+        wo_id = r.json()["data"]["id"]
+
+        r = client.post(f"/api/v1/whatsapp/send-work-order/{wo_id}", json={"phone": None})
+        assert r.status_code == 400
+        assert "no se pudo" in r.json()["error"].lower()

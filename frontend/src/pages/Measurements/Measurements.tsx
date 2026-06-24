@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { api } from "../../api/client";
 import { useNotify } from "../../context/NotificationContext";
 import { useConfirm } from "../../components/ui/useConfirm";
@@ -23,6 +23,9 @@ export function Measurements() {
   const [form, setForm] = useState({ client_name: "", client_phone: "", client_address: "", scheduled_date: "", scheduled_time: "", notes: "" });
   const [saving, setSaving] = useState(false);
 
+  const [photosData, setPhotosData] = useState<string[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   const load = useCallback(async () => {
     setLoading(true);
     setError(null);
@@ -37,10 +40,30 @@ export function Measurements() {
 
   useEffect(() => { load(); }, [load]);
 
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    const newPhotos: string[] = [];
+    for (const file of files) {
+      const base64 = await new Promise<string>((resolve) => {
+        const reader = new FileReader();
+        reader.onload = (ev) => resolve(ev.target?.result as string);
+        reader.readAsDataURL(file);
+      });
+      newPhotos.push(base64);
+    }
+    setPhotosData((prev) => [...prev, ...newPhotos]);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
+  const removePhoto = (index: number) => {
+    setPhotosData((prev) => prev.filter((_, i) => i !== index));
+  };
+
   const resetForm = () => {
     setForm({ client_name: "", client_phone: "", client_address: "", scheduled_date: "", scheduled_time: "", notes: "" });
     setEditingId(null);
     setShowForm(false);
+    setPhotosData([]);
   };
 
   const openEdit = (m: Measurement) => {
@@ -52,6 +75,16 @@ export function Measurements() {
       scheduled_time: m.scheduled_time || "",
       notes: m.notes || "",
     });
+    if (m.photos_data) {
+      try {
+        const parsed = JSON.parse(m.photos_data);
+        setPhotosData(Array.isArray(parsed) ? parsed : []);
+      } catch {
+        setPhotosData([]);
+      }
+    } else {
+      setPhotosData([]);
+    }
     setEditingId(m.id);
     setShowForm(true);
   };
@@ -60,11 +93,15 @@ export function Measurements() {
     e.preventDefault();
     setSaving(true);
     try {
+      const payload = {
+        ...form,
+        photos_data: photosData.length > 0 ? JSON.stringify(photosData) : null,
+      };
       if (editingId) {
-        await api.updateMeasurement(editingId, form);
+        await api.updateMeasurement(editingId, payload);
         notify("Medición actualizada", "success");
       } else {
-        await api.createMeasurement(form);
+        await api.createMeasurement(payload);
         notify("Medición creada", "success");
       }
       resetForm();
@@ -125,6 +162,19 @@ export function Measurements() {
           <label className={styles.measurements__label}>Notas
             <textarea className={styles.measurements__textarea} value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} />
           </label>
+          <label className={styles.measurements__label}>Fotos
+            <input ref={fileInputRef} className={styles.measurements__input} type="file" accept="image/*" multiple onChange={handleFileSelect} />
+          </label>
+          {photosData.length > 0 && (
+            <div className={styles.measurements__photos}>
+              {photosData.map((src, i) => (
+                <div key={i} className={styles.measurements__photoItem}>
+                  <img className={styles.measurements__photoThumb} src={src} alt={`Foto ${i + 1}`} />
+                  <button type="button" className={styles.measurements__photoRemove} onClick={() => removePhoto(i)}>&times;</button>
+                </div>
+              ))}
+            </div>
+          )}
           <FormActions loading={saving} submitLabel={editingId ? "Actualizar" : "Crear"} onCancel={resetForm} />
         </form>
       )}
@@ -136,7 +186,7 @@ export function Measurements() {
       {!loading && !error && items.length > 0 && (
         <table className={styles.measurements__table}>
           <thead>
-            <tr><th>Cliente</th><th>Teléfono</th><th>Fecha</th><th>Horario</th><th>Estado</th><th>Acciones</th></tr>
+            <tr><th>Cliente</th><th>Teléfono</th><th>Fecha</th><th>Horario</th><th>Fotos</th><th>Estado</th><th>Acciones</th></tr>
           </thead>
           <tbody>
             {items.map((m) => (
@@ -145,6 +195,15 @@ export function Measurements() {
                 <td>{m.client_phone || "-"}</td>
                 <td>{m.scheduled_date ? new Date(m.scheduled_date).toLocaleDateString() : "-"}</td>
                 <td>{m.scheduled_time || "-"}</td>
+                <td>
+                  {(() => {
+                    let count = 0;
+                    if (m.photos_data) {
+                      try { const p = JSON.parse(m.photos_data); count = Array.isArray(p) ? p.length : 0; } catch { count = 0; }
+                    }
+                    return count > 0 ? <span className={styles.measurements__photoCount}>{count} foto{count > 1 ? "s" : ""}</span> : "-";
+                  })()}
+                </td>
                 <td>
                   <select
                     className={styles.measurements__statusSelect}

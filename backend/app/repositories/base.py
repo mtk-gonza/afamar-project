@@ -27,6 +27,7 @@ class BaseRepository:
 
     def delete(self, instance: Base) -> None:
         self.db.delete(instance)
+        self.db.commit()
 
     def get_all(self, skip: int = 0, limit: int = 100):
         return self.db.query(self.model).offset(skip).limit(limit).all()

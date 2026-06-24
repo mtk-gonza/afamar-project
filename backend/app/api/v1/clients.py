@@ -1,14 +1,14 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
-from app.core.dependencies import get_db
+from app.core.dependencies import get_current_user, get_db
 from app.core.exceptions import NotFoundError
 from app.core.responses import created, success
 from app.schemas.client import ClientCreate, ClientUpdate
 from app.services.client import ClientService
 from app.utils.pagination import paginate
 
-router = APIRouter()
+router = APIRouter(dependencies=[Depends(get_current_user)])
 
 
 @router.get("")
@@ -32,6 +32,15 @@ def get_client(client_id: int, db: Session = Depends(get_db)):
     if not client:
         raise NotFoundError("Client")
     return success(client)
+
+
+@router.get("/{client_id}/history")
+def get_client_history(client_id: int, db: Session = Depends(get_db)):
+    service = ClientService(db)
+    client = service.get_by_id(client_id)
+    if not client:
+        raise NotFoundError("Client")
+    return success(service.get_history(client_id))
 
 
 @router.post("", status_code=201)

@@ -1,10 +1,15 @@
+import json
+from datetime import date
 from typing import Dict, List, Optional
 
 from sqlalchemy.orm import Session
 
 from app.models.budget import Budget, BudgetAdicional, BudgetItem, BudgetSketchElement
+from app.models.pool_stock import PoolStock, StockMovement
+from app.models.work_order import WorkOrder
 from app.repositories.budget import BudgetRepository
-from app.utils.numbering import generate_budget_number
+from app.repositories.work_order import WorkOrderRepository
+from app.utils.numbering import generate_budget_number, generate_work_order_number
 
 
 def _sync_children(budget: Budget, repo: BudgetRepository, attr: str, model_class, data_list: Optional[List[Dict]]):
@@ -30,6 +35,69 @@ class BudgetService:
     def __init__(self, db: Session):
         self.repo = BudgetRepository(db)
 
+    @staticmethod
+    def compute_surcharge(payment_method: str | None, installments: int) -> dict:
+        if payment_method == "TARJETA DE CRÉDITO":
+            pct = 0 if installments <= 2 else installments * 5
+        else:
+            pct = 0
+        return {"percentage": pct}
+
+    @staticmethod
+    def apply_surcharge(amount_ars: float, amount_usd: float, surcharge_pct: float) -> dict:
+        recargo = round(amount_ars * surcharge_pct / 100)
+        recargo_usd = round(amount_usd * surcharge_pct / 100, 2)
+        return {
+            "surcharge_ars": recargo,
+            "surcharge_usd": recargo_usd,
+            "total_with_surcharge_ars": round(amount_ars + recargo),
+            "total_with_surcharge_usd": round(amount_usd + recargo_usd, 2),
+        }
+
+    @staticmethod
+    def parse_materials_data(materials_data: str | None | list | dict) -> list:
+        if not materials_data:
+            return []
+        if isinstance(materials_data, list):
+            return materials_data
+        if isinstance(materials_data, dict):
+            items = materials_data.get("items") or materials_data.get("materiales") or []
+            return items if isinstance(items, list) else [materials_data]
+        try:
+            parsed = json.loads(materials_data)
+            if isinstance(parsed, list):
+                return parsed
+            if isinstance(parsed, dict):
+                items = parsed.get("items") or parsed.get("materiales") or []
+                return items if isinstance(items, list) else [parsed]
+            return []
+        except (json.JSONDecodeError, TypeError):
+            return []
+
+    @staticmethod
+    def filter_main_materials(materials: list) -> list:
+        return [m for m in materials if not m.get("es_alternativa")]
+
+    @staticmethod
+    def has_alternative_materials(materials: list) -> bool:
+        return any(m.get("es_alternativa") for m in materials)
+
+    def calculate_material_totals(self, materials: list, usd_rate: float) -> dict:
+        ars = 0.0
+        usd = 0.0
+        for m in materials:
+            largo = float(m.get("length") or m.get("largo", 0) or 0)
+            ancho = float(m.get("width") or m.get("ancho", 0) or 0)
+            cantidad = float(m.get("quantity") or m.get("cantidad", 1) or 1)
+            m2 = (largo * ancho) / 10000 if largo > 0 and ancho > 0 else 0
+            area = m2 * cantidad
+            moneda = m.get("moneda") or m.get("currency", "ARS")
+            if moneda == "USD":
+                usd += round(area * float(m.get("price_m2_usd") or m.get("precio_m2_usd", 0) or 0), 2)
+            else:
+                ars += round(area * float(m.get("price_m2") or m.get("precio_m2", 0) or 0), 2)
+        return {"ars": ars, "usd": usd}
+
     def get_all(self, skip: int = 0, limit: int = 100) -> List[Budget]:
         return self.repo.get_all(skip, limit)
 
@@ -45,8 +113,8 @@ class BudgetService:
     def search(self, term: str) -> List[Budget]:
         return self.repo.search(term)
 
-    def list_filtered(self, status: Optional[str] = None, client_id: Optional[int] = None, skip: int = 0, limit: int = 100):
-        return self.repo.list_filtered(status, client_id, skip, limit)
+    def list_filtered(self, status: Optional[str] = None, client_id: Optional[int] = None, date_from: Optional[date] = None, date_to: Optional[date] = None, skip: int = 0, limit: int = 100):
+        return self.repo.list_filtered(status, client_id, date_from, date_to, skip, limit)
 
     def create(self, data: dict) -> Budget:
         items_data = data.pop("items", [])
@@ -54,6 +122,28 @@ class BudgetService:
         sketch_data = data.pop("sketch_elements", [])
         last_number = self.repo.get_last_number()
         data["number"] = generate_budget_number(last_number)
+        client_id = data.get("client_id")
+        if not client_id:
+            client_name = data.get("client_name")
+            if client_name:
+                from app.models.client import Client
+                client = self.repo.db.query(Client).filter(Client.name == client_name).first()
+                if not client:
+                    client = Client(
+                        name=client_name,
+                        phone=data.get("client_phone"),
+                        email=data.get("client_email"),
+                        address=data.get("client_address"),
+                    )
+                    self.repo.db.add(client)
+                    self.repo.db.flush()
+                data["client_id"] = client.id
+            else:
+                raise ValueError("client_id or client_name is required")
+        data.pop("client_name", None)
+        data.pop("client_phone", None)
+        data.pop("client_email", None)
+        data.pop("client_address", None)
         budget = self.repo.create(data)
         for item_data in items_data:
             item = BudgetItem(budget_id=budget.id, **item_data)
@@ -85,6 +175,176 @@ class BudgetService:
         budget = self.repo.get_by_id(budget_id)
         if not budget:
             return False
+        if budget.stock_deducted:
+            pools_restored = set()
+            if budget.pool_id and budget.pool_id not in pools_restored:
+                pool = self.repo.db.query(PoolStock).filter(PoolStock.id == budget.pool_id).first()
+                if pool:
+                    pool.quantity = (pool.quantity or 0) + 1
+                    movement = StockMovement(
+                        pool_id=pool.id,
+                        type="entry",
+                        quantity=1,
+                        notes=f"Restauración por eliminación de presupuesto {budget.number}",
+                    )
+                    self.repo.db.add(movement)
+                pools_restored.add(budget.pool_id)
+            if budget.pools_data:
+                try:
+                    pools_list = json.loads(budget.pools_data) if isinstance(budget.pools_data, str) else budget.pools_data
+                    for entry in pools_list if isinstance(pools_list, list) else []:
+                        pid = entry.get("pool_id") or entry.get("id")
+                        qty = entry.get("quantity", 1)
+                        if pid and pid not in pools_restored:
+                            pool = self.repo.db.query(PoolStock).filter(PoolStock.id == pid).first()
+                            if pool:
+                                pool.quantity = (pool.quantity or 0) + qty
+                                movement = StockMovement(
+                                    pool_id=pool.id,
+                                    type="entry",
+                                    quantity=qty,
+                                    notes=f"Restauración por eliminación de presupuesto {budget.number}",
+                                )
+                                self.repo.db.add(movement)
+                            pools_restored.add(pid)
+                except (json.JSONDecodeError, TypeError):
+                    pass
+            budget.stock_deducted = False
         self.repo.delete(budget)
         self.repo.db.commit()
         return True
+
+    def convert_alternative_to_work_order(self, budget_id: int, idx: int) -> WorkOrder:
+        budget = self.repo.get_by_id(budget_id)
+        if not budget:
+            raise ValueError("Budget not found")
+
+        materials = self.parse_materials_data(budget.materials_data)
+
+        if idx < 0 or idx >= len(materials):
+            raise ValueError(f"Alternative index {idx} out of range")
+
+        alt = materials[idx]
+        if not alt.get("es_alternativa"):
+            raise ValueError("Material at index is not marked as alternative")
+
+        largo = float(alt.get("length") or alt.get("largo", 0) or 0)
+        ancho = float(alt.get("width") or alt.get("ancho", 0) or 0)
+        m2 = (largo * ancho) / 10000 if largo > 0 and ancho > 0 else 0
+        cantidad = float(alt.get("quantity") or alt.get("cantidad", 1) or 1)
+        area = m2 * cantidad
+
+        alt_currency = alt.get("moneda") or alt.get("currency") or budget.currency or "ARS"
+        usd_rate_value = budget.usd_rate or 1000.0
+
+        if alt_currency == "USD":
+            mat_cost_usd = round(area * float(alt.get("price_m2_usd") or alt.get("precio_m2_usd", 0) or 0), 2)
+            mat_cost_ars = round(mat_cost_usd * usd_rate_value)
+        else:
+            mat_cost_ars = round(area * float(alt.get("price_m2") or alt.get("precio_m2", 0) or 0), 2)
+            mat_cost_usd = round(mat_cost_ars / usd_rate_value, 2) if usd_rate_value > 0 else 0
+
+        total_detalles_ars = 0.0
+        total_detalles_usd = 0.0
+        detalles = []
+        if budget.fabrication_details:
+            try:
+                detalles = json.loads(budget.fabrication_details) if isinstance(budget.fabrication_details, str) else budget.fabrication_details
+            except (json.JSONDecodeError, TypeError):
+                pass
+        for d in (detalles if isinstance(detalles, list) else []):
+            p = float(d.get("precio", 0) or 0)
+            c = float(d.get("cantidad") or d.get("quantity", 1) or 1)
+            if d.get("moneda") == "USD":
+                total_detalles_usd += p * c
+            else:
+                total_detalles_ars += p * c
+
+        total_piletas_ars = 0.0
+        total_piletas_usd = 0.0
+        pools = self.parse_materials_data(budget.pools_data)
+        for pt in pools:
+            p = float(pt.get("precio") or pt.get("price", 0) or 0)
+            c = float(pt.get("cantidad") or pt.get("quantity", 1) or 1)
+            if pt.get("moneda") == "USD":
+                total_piletas_usd += p * c
+            else:
+                total_piletas_ars += p * c
+
+        traslado = float(budget.transport or 0)
+
+        if alt_currency == "USD":
+            subtotal_ars = total_detalles_ars + total_piletas_ars
+            subtotal_usd = mat_cost_usd + total_detalles_usd + total_piletas_usd
+        else:
+            subtotal_ars = mat_cost_ars + total_detalles_ars + total_piletas_ars
+            subtotal_usd = total_detalles_usd + total_piletas_usd
+
+        total_ars = round(subtotal_ars + round(subtotal_usd * usd_rate_value, 2) + traslado)
+        total_usd_val = round(subtotal_usd + round(subtotal_ars / usd_rate_value, 2) + round(traslado / usd_rate_value, 2), 2) if usd_rate_value > 0 else 0
+
+        common = [m for m in materials if not m.get("es_alternativa")]
+        budgeted_details_list = [alt] + common
+
+        last_number = self.repo.db.query(WorkOrder).order_by(WorkOrder.id.desc()).first()
+        number = generate_work_order_number(last_number.number if last_number else None)
+
+        alt_nombre = alt.get("nombre") or alt.get("name") or alt.get("description") or ""
+        alt_precio_m2 = alt.get("price_m2") or alt.get("precio_m2", 0) or 0
+        alt_color = alt.get("color") or ""
+        alt_espesor = alt.get("espesor") or alt.get("thickness") or ""
+
+        data = {
+            "number": number,
+            "client_id": budget.client_id,
+            "budget_id": budget.id,
+            "status": "measurement",
+            "origin": "Desde alternativa",
+            "material": alt_nombre,
+            "material_price_m2": alt_precio_m2,
+            "materials_data": json.dumps(materials),
+            "adicionales_data": None,
+            "color": alt_color or budget.color,
+            "thickness": alt_espesor or budget.thickness,
+            "finish": alt.get("finish") or budget.finish,
+            "bacha": budget.bacha,
+            "anafe": budget.anafe,
+            "currency": alt_currency,
+            "usd_rate": usd_rate_value,
+            "subtotal": round(subtotal_ars),
+            "transport": traslado,
+            "installation": budget.installation or 0,
+            "discount": budget.discount or 0,
+            "discount_percentage": budget.discount_percentage or 0,
+            "discount_fixed_amount": budget.discount_fixed_amount or 0,
+            "total": total_ars,
+            "subtotal_usd": round(subtotal_usd, 2),
+            "transport_usd": round(traslado / usd_rate_value, 2) if usd_rate_value > 0 else 0,
+            "total_usd": total_usd_val,
+            "deposit_received": budget.deposit_received or 0,
+            "deposit_currency": budget.deposit_currency or "ARS",
+            "deposit_usd": budget.deposit_usd or 0,
+            "balance_due": max(0, total_ars - (budget.deposit_received or 0)),
+            "balance_due_usd": max(0, total_usd_val - (budget.deposit_usd or 0)),
+            "payment_method": budget.payment_method,
+            "installments": budget.installments or 1,
+            "priority": budget.priority or "Normal",
+            "delivery_date": budget.delivery_date,
+            "notes": budget.notes,
+            "fabrication_details": budget.fabrication_details,
+            "budgeted_details": json.dumps(budgeted_details_list),
+            "design_observations": budget.design_observations or "",
+            "important_observations": budget.important_observations or "",
+            "snapshot_name": budget.snapshot_name,
+            "snapshot_phone": budget.snapshot_phone,
+            "snapshot_email": budget.snapshot_email,
+            "snapshot_address": budget.snapshot_address,
+            "date": budget.date,
+        }
+
+        wo_repo = WorkOrderRepository(self.repo.db)
+        work_order = wo_repo.create(data)
+        work_order.stock_deducted = True
+        self.repo.db.commit()
+        self.repo.db.refresh(work_order)
+        return work_order

@@ -7,7 +7,11 @@ from app.schemas.base import BaseResponse
 
 
 class WorkOrderBase(BaseModel):
-    client_id: int
+    client_id: int | None = None
+    client_name: str | None = None
+    client_phone: str | None = None
+    client_email: str | None = None
+    client_address: str | None = None
     budget_id: int | None = None
     material: str | None = None
     material_price_m2: float = 0.0
@@ -23,6 +27,8 @@ class WorkOrderBase(BaseModel):
     transport: float = 0.0
     installation: float = 0.0
     discount: float = 0.0
+    discount_percentage: float = 0.0
+    discount_fixed_amount: float = 0.0
     total: float = 0.0
     subtotal_usd: float = 0.0
     transport_usd: float = 0.0
@@ -76,6 +82,8 @@ class WorkOrderUpdate(BaseModel):
     transport: float | None = None
     installation: float | None = None
     discount: float | None = None
+    discount_percentage: float | None = None
+    discount_fixed_amount: float | None = None
     total: float | None = None
     subtotal_usd: float | None = None
     transport_usd: float | None = None

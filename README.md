@@ -73,7 +73,7 @@ APP_NAME=AFAMAR
 APP_VERSION=1.0.0
 DEBUG=true
 # CORS
-CORS_ORIGINS=http://localhost:5173,http://localhost:3000
+CORS_ORIGINS=http://localhost:3090,http://localhost:3000
 # Email (SMTP)
 SMTP_HOST=smtp.gmail.com
 SMTP_PORT=587
@@ -88,13 +88,13 @@ SMTP_FROM=tu-correo@gmail.com
 ### 2.3 Iniciar el servidor de desarrollo
 
 ```bash
-uvicorn app.main:app --reload
+uvicorn app.main:app --reload --port 3095
 ```
 
-El servidor se levanta en `http://localhost:8000`.
+El servidor se levanta en `http://localhost:3095`.
 
-- Documentación interactiva: `http://localhost:8000/docs`
-- Health check: `http://localhost:8000/health`
+- Documentación interactiva: `http://localhost:3095/docs`
+- Health check: `http://localhost:3095/health`
 
 > En el primer inicio crea automáticamente todas las tablas de la base de datos y carga datos semilla (categorías, colores, espesores, materiales comunes con precios, opciones de especificaciones y configuraciones por defecto).
 
@@ -127,7 +127,7 @@ npm install
 npm run dev
 ```
 
-Se levanta en `http://localhost:5173`. El frontend se comunica con el backend en `http://localhost:8000` (configurado en `.env` del backend mediante `CORS_ORIGINS`).
+Se levanta en `http://localhost:3090`. El frontend se comunica con el backend en `http://localhost:3095` (configurado en `.env` del backend mediante `CORS_ORIGINS`).
 
 ### 3.3 Build de producción
 
@@ -158,8 +158,8 @@ npm run preview
 docker compose up -d
 ```
 
-- Backend en `http://localhost:8000`
-- Frontend en `http://localhost:5173`
+- Backend en `http://localhost:3095`
+- Frontend en `http://localhost:3090`
 
 ### Detener
 
@@ -229,14 +229,14 @@ afamar-project/
 cd backend
 venv\Scripts\Activate.ps1        # Activar venv (Windows PowerShell)
 pip install -r requirements.txt  # Instalar dependencias
-uvicorn app.main:app --reload    # Servidor dev :8000
+uvicorn app.main:app --reload --port 3095    # Servidor dev :3095
 ruff check .                     # Linter
 pytest                           # Tests
 
 # Frontend
 cd frontend
 npm install                      # Instalar dependencias
-npm run dev                      # Servidor dev :5173
+npm run dev                      # Servidor dev :3090
 npm run build                    # Build producción (tsc + vite)
 npm run preview                  # Preview build producción
 ```

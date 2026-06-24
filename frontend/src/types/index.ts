@@ -48,7 +48,7 @@ export interface Budget {
   id: number;
   number: string;
   client_id: number;
-  status: "pending" | "approved" | "rejected";
+  status: "PENDIENTE" | "ONLINE" | "APROBADO" | "RECHAZADO" | "CONVERTIDO A OT";
   material: string | null;
   material_price_m2: number;
   material_price_m2_usd: number;
@@ -68,6 +68,8 @@ export interface Budget {
   transport: number;
   installation: number;
   discount: number;
+  discount_percentage: number;
+  discount_fixed_amount: number;
   total: number;
   subtotal_usd: number;
   transport_usd: number;
@@ -116,7 +118,7 @@ export interface WorkOrder {
   number: string;
   client_id: number;
   budget_id: number | null;
-  status: "budgeted" | "in_production" | "finished";
+  status: "MEDICION" | "TALLER" | "TERMINADA" | "ENTREGADA" | "CANCELADO";
   origin: string;
   material: string | null;
   material_price_m2: number;
@@ -132,6 +134,8 @@ export interface WorkOrder {
   transport: number;
   installation: number;
   discount: number;
+  discount_percentage: number;
+  discount_fixed_amount: number;
   total: number;
   subtotal_usd: number;
   transport_usd: number;
@@ -168,6 +172,7 @@ export interface WorkOrder {
   date: string | null;
   created_at: string;
   updated_at: string;
+  condiciones_comerciales: string | null;
 }
 
 export interface AppOption {
@@ -250,6 +255,7 @@ export interface SettingsData {
   budget_terms: string;
   delivery_terms: string;
   warranty_text: string;
+  observaciones_automaticas: string;
 }
 
 export interface DashboardStats {
@@ -313,6 +319,56 @@ export interface User {
   is_active: boolean;
   is_admin: boolean;
   created_at: string;
+}
+
+export interface SketchElement {
+  id?: number;
+  type: "select" | "draw" | "line" | "rect" | "circle" | "bacha" | "anafe" | "hole" | "text" | "measure" | "path";
+  x?: number;
+  y?: number;
+  x1?: number;
+  y1?: number;
+  x2?: number;
+  y2?: number;
+  w?: number;
+  h?: number;
+  r?: number;
+  ancho?: number;
+  alto?: number;
+  text?: string;
+  label?: string;
+  points?: { x: number; y: number }[];
+  color?: string;
+  fill?: string;
+  lineWidth?: number;
+  font?: string;
+  rotacion?: number;
+  seleccionado?: boolean;
+}
+
+export interface SketchPage {
+  pagina_id?: number;
+  id?: number;
+  nombre: string;
+  elementos?: SketchElement[];
+  dibujo?: SketchElement[];
+}
+
+export interface ClientHistoryItem {
+  id: number;
+  number: string;
+  status: string;
+  total: number;
+  created_at: string | null;
+}
+
+export interface ClientHistory {
+  total_budgets: number;
+  total_orders: number;
+  total_billed: number;
+  last_order_number: string | null;
+  recent_orders: ClientHistoryItem[];
+  recent_budgets: ClientHistoryItem[];
 }
 
 export interface LoginCredentials {

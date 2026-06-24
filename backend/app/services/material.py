@@ -32,6 +32,7 @@ class MaterialService:
                 "material_name": material.name,
                 "price_m2": price,
             })
+            self.repo.db.refresh(material)
         return material
 
     def update(self, material_id: int, data: dict) -> Optional[Material]:

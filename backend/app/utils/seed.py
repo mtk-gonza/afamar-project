@@ -77,6 +77,7 @@ def seed_default_data():
                 "budget_terms": "",
                 "delivery_terms": "",
                 "warranty_text": "",
+                "observaciones_automaticas": "",
             }.items():
                 db.add(Setting(key=k, value=v))
 

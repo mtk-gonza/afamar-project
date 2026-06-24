@@ -1,0 +1,23 @@
+.consultant { padding: 0; }
+.consultant__title { font-size: 1.5rem; color: #1a1a2e; margin-bottom: 1.5rem; }
+.consultant__searchRow { display: flex; gap: 0.75rem; align-items: flex-start; margin-bottom: 1.5rem; }
+.consultant__searchWrapper { position: relative; flex: 1; max-width: 480px; }
+.consultant__searchInput { width: 100%; padding: 0.6rem 0.8rem; border: 1px solid #ccc; border-radius: 6px; font-size: 0.9rem; box-sizing: border-box; }
+.consultant__searchInput:focus { border-color: #1a1a2e; outline: none; box-shadow: 0 0 0 2px rgba(26, 26, 46, 0.1); }
+.consultant__spinner { position: absolute; right: 8px; top: 50%; transform: translateY(-50%); }
+.consultant__dropdown { position: absolute; top: 100%; left: 0; right: 0; background: #fff; border: 1px solid #ccc; border-top: none; border-radius: 0 0 6px 6px; max-height: 240px; overflow-y: auto; z-index: 10; list-style: none; margin: 0; padding: 0; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1); }
+.consultant__dropdownItem { padding: 0.6rem 0.8rem; cursor: pointer; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #f0f0f0; transition: background 0.15s; }
+.consultant__dropdownItem:last-child { border-bottom: none; }
+.consultant__dropdownItem:hover { background: #f5f5f5; }
+.consultant__dropdownName { font-size: 0.9rem; color: #1a1a2e; font-weight: 500; }
+.consultant__dropdownPrice { font-size: 0.8rem; color: #666; white-space: nowrap; }
+.consultant__empty { position: absolute; top: 100%; left: 0; right: 0; background: #fff; border: 1px solid #ccc; border-top: none; border-radius: 0 0 6px 6px; padding: 0.8rem; text-align: center; color: #999; font-size: 0.85rem; z-index: 10; }
+.consultant__clearBtn { background: #c0392b; color: #fff; border: none; padding: 0.6rem 1.2rem; border-radius: 6px; font-size: 0.85rem; cursor: pointer; white-space: nowrap; }
+.consultant__clearBtn:hover { background: #a93226; }
+.consultant__table { width: 100%; border-collapse: collapse; background: #fff; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08); }
+.consultant__table th, .consultant__table td { text-align: left; padding: 0.75rem 1rem; font-size: 0.9rem; }
+.consultant__table th { background: #f0f0f0; font-weight: 600; color: #333; }
+.consultant__table td { border-top: 1px solid #eee; }
+.consultant__removeBtn { background: #fff; color: #c0392b; border: 1px solid #c0392b; padding: 0.3rem 0.8rem; border-radius: 4px; font-size: 0.8rem; cursor: pointer; }
+.consultant__removeBtn:hover { background: #c0392b; color: #fff; }
+.consultant__emptyState { text-align: center; padding: 3rem 1rem; color: #666; font-size: 0.95rem; background: #fff; border-radius: 8px; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08); }

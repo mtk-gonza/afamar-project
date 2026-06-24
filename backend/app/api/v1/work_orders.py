@@ -1,15 +1,23 @@
-from fastapi import APIRouter, Depends, Query
+import json
+from datetime import date
+from typing import Optional
+
+from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi.responses import Response
 from sqlalchemy.orm import Session
 
-from app.core.dependencies import get_db
+from app.core.dependencies import get_current_user, get_db
 from app.core.exceptions import NotFoundError
 from app.core.responses import created, success
-from app.schemas.work_order import WorkOrderCreate, WorkOrderUpdate
+from app.models.setting import Setting
+from app.schemas.work_order import WorkOrderCreate, WorkOrderResponse, WorkOrderUpdate
 from app.services.budget import BudgetService
+from app.services.email import send_work_order_email
+from app.services.pdf_html import build_work_order_pdf_data, generate_work_order_pdf
 from app.services.work_order import WorkOrderService
 from app.utils.pagination import paginate
 
-router = APIRouter()
+router = APIRouter(dependencies=[Depends(get_current_user)])
 
 
 @router.get("")
@@ -18,6 +26,8 @@ def list_work_orders(
     limit: int = 100,
     status: str | None = None,
     client_id: int | None = None,
+    date_from: Optional[date] = None,
+    date_to: Optional[date] = None,
     db: Session = Depends(get_db),
 ):
     service = WorkOrderService(db)
@@ -26,9 +36,22 @@ def list_work_orders(
         query = query.filter(service.repo.model.status == status)
     if client_id:
         query = query.filter(service.repo.model.client_id == client_id)
+    if date_from:
+        query = query.filter(service.repo.model.date >= date_from)
+    if date_to:
+        query = query.filter(service.repo.model.date <= date_to)
     query = query.order_by(service.repo.model.created_at.desc())
     page = paginate(db, query, skip, limit)
     return success(page.items, page.pagination)
+
+
+@router.get("/next-number")
+def next_work_order_number(db: Session = Depends(get_db)):
+    from app.services.work_order import WorkOrderService
+    service = WorkOrderService(db)
+    last = service.repo.get_last_number()
+    from app.utils.numbering import generate_work_order_number
+    return success({"number": generate_work_order_number(last)})
 
 
 @router.get("/search")
@@ -69,6 +92,90 @@ def update_work_order(order_id: int, data: WorkOrderUpdate, db: Session = Depend
     if not order:
         raise NotFoundError("Work order")
     return success(order)
+
+
+def _load_settings(db: Session) -> dict:
+    rows = db.query(Setting).all()
+    return {row.key: row.value for row in rows}
+
+
+_COMPANY_KEYS = ["company_name", "company_address", "company_phone", "company_email", "pdf_footer"]
+_TERMS_KEYS = ["budget_terms", "delivery_terms", "warranty_text"]
+
+
+def _build_company_and_terms(settings_data: dict) -> tuple[dict, dict]:
+    company = {k: settings_data.get(k, "") for k in _COMPANY_KEYS}
+    terms = {k: settings_data.get(k, "") for k in _TERMS_KEYS}
+    return company, terms
+
+
+def _prepare_work_order_payload(order, db: Session) -> tuple[dict, dict, dict, dict]:
+    order_data = WorkOrderResponse.model_validate(order).model_dump(mode="json")
+    items = []
+    if order.materials_data:
+        try:
+            parsed = json.loads(order.materials_data) if isinstance(order.materials_data, str) else order.materials_data
+            if isinstance(parsed, list):
+                items = parsed
+            elif isinstance(parsed, dict):
+                items = parsed.get("items", [])
+        except (json.JSONDecodeError, TypeError):
+            pass
+    order_data["items"] = items
+    client = order.client
+    client_dict = {
+        "name": client.name,
+        "phone": client.phone,
+        "email": client.email,
+        "address": client.address,
+    }
+    settings_data = _load_settings(db)
+    company, terms = _build_company_and_terms(settings_data)
+    return order_data, client_dict, company, terms
+
+
+@router.get("/{order_id}/pdf")
+def download_work_order_pdf(order_id: int, db: Session = Depends(get_db)):
+    service = WorkOrderService(db)
+    order = service.get_by_id(order_id)
+    if not order:
+        raise NotFoundError("Work order")
+
+    order_data, client_dict, company, terms = _prepare_work_order_payload(order, db)
+    pdf_data = build_work_order_pdf_data(order_data, client_dict, company, terms)
+    pdf_bytes = generate_work_order_pdf(pdf_data, logo_path=company.get("company_logo")).read()
+
+    return Response(
+        pdf_bytes,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f'attachment; filename="orden_de_trabajo_{order.number}.pdf"'},
+    )
+
+
+@router.post("/{order_id}/send-email")
+def email_work_order(order_id: int, db: Session = Depends(get_db)):
+    service = WorkOrderService(db)
+    order = service.get_by_id(order_id)
+    if not order:
+        raise NotFoundError("Work order")
+
+    client = order.client
+    if not client.email:
+        raise HTTPException(status_code=400, detail="El cliente no tiene email registrado")
+
+    order_data, client_dict, company, terms = _prepare_work_order_payload(order, db)
+    pdf_data = build_work_order_pdf_data(order_data, client_dict, company, terms)
+    pdf_bytes = generate_work_order_pdf(pdf_data, logo_path=company.get("company_logo")).read()
+    company_name = company.get("company_name") or "AFAMAR"
+
+    try:
+        send_work_order_email(client.email, pdf_bytes, order.number, company_name=company_name)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error al enviar email: {str(e)}")
+
+    return success({"message": "Email enviado correctamente"})
 
 
 @router.delete("/{order_id}", status_code=204)

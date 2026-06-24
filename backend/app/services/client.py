@@ -16,6 +16,9 @@ class ClientService:
     def get_by_id(self, client_id: int) -> Optional[Client]:
         return self.repo.get_by_id(client_id)
 
+    def get_history(self, client_id: int) -> dict:
+        return self.repo.get_history(client_id)
+
     def search(self, term: str) -> List[Client]:
         return self.repo.search(term)
 

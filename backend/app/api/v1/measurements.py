@@ -1,14 +1,14 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
-from app.core.dependencies import get_db
+from app.core.dependencies import get_current_user, get_db
 from app.core.exceptions import NotFoundError
 from app.core.responses import created, success
 from app.schemas.measurement import MeasurementCreate, MeasurementUpdate
 from app.services.measurement import MeasurementService
 from app.utils.pagination import paginate
 
-router = APIRouter()
+router = APIRouter(dependencies=[Depends(get_current_user)])
 
 
 @router.get("")

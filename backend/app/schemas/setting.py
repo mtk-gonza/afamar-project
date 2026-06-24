@@ -11,3 +11,4 @@ class SettingUpdate(BaseModel):
     budget_terms: str = ""
     delivery_terms: str = ""
     warranty_text: str = ""
+    observaciones_automaticas: str = ""

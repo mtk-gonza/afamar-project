@@ -1,5 +1,5 @@
 from datetime import date
-from typing import Any
+from typing import Any, Optional
 
 from sqlalchemy import func
 from sqlalchemy.orm import Session
@@ -16,8 +16,13 @@ class ReportService:
     def __init__(self, db: Session):
         self.db = db
 
-    def budgets_by_status(self, status: str) -> list[dict[str, Any]]:
-        results = self.db.query(Budget).filter(Budget.status == status).all()
+    def budgets_by_status(self, status: str, date_from: Optional[date] = None, date_to: Optional[date] = None) -> list[dict[str, Any]]:
+        query = self.db.query(Budget).filter(Budget.status == status)
+        if date_from:
+            query = query.filter(Budget.created_at >= date_from)
+        if date_to:
+            query = query.filter(Budget.created_at <= date_to)
+        results = query.all()
         return [
             {
                 "id": b.id,
@@ -44,8 +49,13 @@ class ReportService:
             for b in results
         ]
 
-    def work_orders_by_status(self, status: str) -> list[dict[str, Any]]:
-        results = self.db.query(WorkOrder).filter(WorkOrder.status == status).all()
+    def work_orders_by_status(self, status: str, date_from: Optional[date] = None, date_to: Optional[date] = None) -> list[dict[str, Any]]:
+        query = self.db.query(WorkOrder).filter(WorkOrder.status == status)
+        if date_from:
+            query = query.filter(WorkOrder.created_at >= date_from)
+        if date_to:
+            query = query.filter(WorkOrder.created_at <= date_to)
+        results = query.all()
         return [
             {
                 "id": o.id,
@@ -58,17 +68,17 @@ class ReportService:
             for o in results
         ]
 
-    def monthly_sales(self, year: int) -> list[dict[str, Any]]:
-        results = (
-            self.db.query(
-                func.strftime("%m", Budget.created_at).label("month"),
-                func.sum(Budget.total).label("total"),
-                func.sum(Budget.total_usd).label("total_usd"),
-            )
-            .filter(Budget.status == "approved", func.strftime("%Y", Budget.created_at) == str(year))
-            .group_by("month")
-            .all()
-        )
+    def monthly_sales(self, year: int, date_from: Optional[date] = None, date_to: Optional[date] = None) -> list[dict[str, Any]]:
+        query = self.db.query(
+            func.strftime("%m", Budget.created_at).label("month"),
+            func.sum(Budget.total).label("total"),
+            func.sum(Budget.total_usd).label("total_usd"),
+        ).filter(Budget.status == "approved", func.strftime("%Y", Budget.created_at) == str(year))
+        if date_from:
+            query = query.filter(Budget.created_at >= date_from)
+        if date_to:
+            query = query.filter(Budget.created_at <= date_to)
+        results = query.group_by("month").all()
         return [
             {
                 "month": r.month,

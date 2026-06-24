@@ -12,6 +12,7 @@ class OnlineBudget(Base):
     id: Mapped[int] = mapped_column(primary_key=True, index=True)
     number: Mapped[str] = mapped_column(String(20), unique=True, nullable=False)
     client_name: Mapped[str] = mapped_column(String(200), nullable=True)
+    phone: Mapped[str] = mapped_column(String(50), nullable=True)
     work_type: Mapped[str] = mapped_column(String(200), nullable=True)
     date: Mapped[str] = mapped_column(String(50), nullable=True)
     status: Mapped[str] = mapped_column(String(30), default="ONLINE")

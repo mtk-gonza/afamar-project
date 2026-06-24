@@ -20,3 +20,7 @@
 .budgetForm__submit:disabled { opacity: 0.6; }
 .budgetForm__cancel { background: #eee; color: #333; border: none; padding: 0.6rem 1.5rem; border-radius: 6px; font-size: 0.9rem; cursor: pointer; }
 .budgetForm__error { background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; padding: 2rem; text-align: center; color: #991b1b; }
+.budgetForm__nextNumber { display: block; font-size: 0.85rem; color: #555; margin-bottom: 0.5rem; }
+.budgetForm__fabTabs { display: flex; gap: 0.25rem; margin-bottom: 0.75rem; }
+.budgetForm__fabTab { padding: 0.35rem 0.8rem; border: 1px solid #ccc; border-radius: 6px 6px 0 0; background: #f5f5f5; cursor: pointer; font-size: 0.8rem; font-weight: 500; color: #555; }
+.budgetForm__fabTab--active { background: #fff; border-bottom-color: #fff; color: #1a1a2e; }

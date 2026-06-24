@@ -11,7 +11,7 @@ class Settings(BaseSettings):
     database_url: str = "sqlite:///./afamar.db"
 
     # CORS
-    cors_origins: str = "http://localhost:5173"
+    cors_origins: str = "http://localhost:3090"
 
     # PDF
     pdf_output_dir: str = "./pdfs"
@@ -36,7 +36,7 @@ class Settings(BaseSettings):
     def origins(self) -> list[str]:
         return [o.strip() for o in self.cors_origins.split(",") if o.strip()]
 
-    model_config = {"env_file": ".env", "env_file_encoding": "utf-8"}
+    model_config = {"env_file": ".env", "extra": "allow", "env_file_encoding": "utf-8"}
 
 
 settings = Settings()

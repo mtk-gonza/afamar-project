@@ -1,3 +1,4 @@
+from datetime import date
 from typing import List, Optional
 
 from sqlalchemy.orm import Session, joinedload
@@ -38,20 +39,28 @@ class BudgetRepository(BaseRepository):
     def get_by_client(self, client_id: int) -> List[Budget]:
         return _eager_query(self.db).filter(Budget.client_id == client_id).order_by(Budget.id.desc()).all()
 
-    def list_filtered(self, status: Optional[str] = None, client_id: Optional[int] = None, skip: int = 0, limit: int = 100):
+    def list_filtered(self, status: Optional[str] = None, client_id: Optional[int] = None, date_from: Optional[date] = None, date_to: Optional[date] = None, skip: int = 0, limit: int = 100):
         query = _eager_query(self.db)
         if status:
             query = query.filter(Budget.status == status)
         if client_id:
             query = query.filter(Budget.client_id == client_id)
+        if date_from:
+            query = query.filter(Budget.date >= date_from)
+        if date_to:
+            query = query.filter(Budget.date <= date_to)
         return query.order_by(Budget.id.desc()).offset(skip).limit(limit).all()
 
-    def list_filtered_count(self, status: Optional[str] = None, client_id: Optional[int] = None) -> int:
+    def list_filtered_count(self, status: Optional[str] = None, client_id: Optional[int] = None, date_from: Optional[date] = None, date_to: Optional[date] = None) -> int:
         query = self.db.query(Budget)
         if status:
             query = query.filter(Budget.status == status)
         if client_id:
             query = query.filter(Budget.client_id == client_id)
+        if date_from:
+            query = query.filter(Budget.date >= date_from)
+        if date_to:
+            query = query.filter(Budget.date <= date_to)
         return query.count()
 
     def search(self, term: str) -> List[Budget]:

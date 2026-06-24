@@ -8,7 +8,9 @@ import { optionsApi } from "./options";
 import { settingsApi } from "./settings";
 import { measurementsApi } from "./measurements";
 import { onlineBudgetsApi } from "./onlineBudgets";
+import { cashApi } from "./caja";
 import { reportsApi } from "./reports";
+import { referencesApi } from "./references";
 import { searchApi } from "./search";
 import { whatsappApi } from "./whatsapp";
 
@@ -20,6 +22,7 @@ export const api = {
   // Clients
   getClients: clientsApi.list,
   getClient: clientsApi.get,
+  getClientHistory: clientsApi.getHistory,
   searchClients: clientsApi.search,
   createClient: clientsApi.create,
   updateClient: clientsApi.update,
@@ -35,6 +38,8 @@ export const api = {
   downloadBudgetPdf: budgetsApi.downloadPdf,
   sendBudgetEmail: budgetsApi.sendEmail,
   sendBudgetWhatsApp: whatsappApi.sendBudget,
+  sendWorkOrderWhatsApp: whatsappApi.sendWorkOrder,
+  getNextBudgetNumber: budgetsApi.getNextBudgetNumber,
 
   // Work Orders
   getWorkOrders: workOrdersApi.list,
@@ -44,6 +49,7 @@ export const api = {
   createFromBudget: workOrdersApi.createFromBudget,
   updateWorkOrder: workOrdersApi.update,
   deleteWorkOrder: workOrdersApi.delete,
+  getNextWorkOrderNumber: workOrdersApi.nextNumber,
 
   // Materials
   getCategories: materialsApi.categories.list,
@@ -93,9 +99,27 @@ export const api = {
   createOnlineBudget: onlineBudgetsApi.create,
   updateOnlineBudget: onlineBudgetsApi.update,
   deleteOnlineBudget: onlineBudgetsApi.delete,
+  convertOnlineBudgetToWorkOrder: onlineBudgetsApi.convertToWorkOrder,
+  sendOnlineBudgetWhatsApp: onlineBudgetsApi.sendWhatsApp,
+
+  // References
+  getBudgetStatuses: (active?: boolean) => referencesApi.budgetStatuses.list(active),
+  getReference: referencesApi.budgetStatuses.get,
+  createReference: referencesApi.budgetStatuses.create,
+  updateReference: referencesApi.budgetStatuses.update,
+  deleteReference: referencesApi.budgetStatuses.delete,
+  references: referencesApi,
 
   // Search
   search: searchApi.all,
+
+  // Cash
+  getDailyCash: cashApi.getDaily,
+  createCashMovement: cashApi.createMovement,
+  deleteCashMovement: cashApi.deleteMovement,
+  updateCashPreviousBalance: cashApi.updatePreviousBalance,
+  closeDailyCash: cashApi.closeDailyCash,
+  getCashHistory: cashApi.getHistory,
 
   // Reports
   getDashboard: reportsApi.dashboard,

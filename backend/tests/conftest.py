@@ -7,8 +7,9 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
 from app.core.database import Base
-from app.core.dependencies import get_db
+from app.core.dependencies import get_current_user, get_db
 from app.main import app
+from app.models.user import User
 
 _db_file = os.path.join(tempfile.gettempdir(), "afamar_test.db")
 engine = create_engine(f"sqlite:///{_db_file}", connect_args={"check_same_thread": False})
@@ -33,6 +34,9 @@ def setup_db():
 @pytest.fixture
 def client(setup_db):
     app.dependency_overrides[get_db] = override_get_db
+    app.dependency_overrides[get_current_user] = lambda: User(
+        id=1, username="admin", email="admin@test.com", is_active=True, is_admin=True
+    )
     with TestClient(app) as c:
         yield c
     app.dependency_overrides.clear()

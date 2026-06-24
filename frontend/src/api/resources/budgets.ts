@@ -12,4 +12,5 @@ export const budgetsApi = {
   delete: (id: number) => http.delete(`/budgets/${id}`),
   downloadPdf: (id: number) => http.get(`/budgets/${id}/pdf`, { responseType: "blob" }).then((r) => r.data),
   sendEmail: (id: number) => wrap<{ message: string }>(() => http.post(`/budgets/${id}/send-email`)),
+  getNextBudgetNumber: () => wrap<{ number: string }>(() => http.get("/budgets/next-number")),
 };

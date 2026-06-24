@@ -2,13 +2,14 @@ from fastapi import APIRouter, Depends
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
-from app.core.dependencies import get_db
+from app.core.dependencies import get_current_user, get_db
 from app.core.exceptions import NotFoundError
 from app.core.responses import error, success
 from app.services.budget import BudgetService
-from app.services.whatsapp import build_budget_message, send_whatsapp
+from app.services.whatsapp import build_budget_message, build_work_order_message, send_whatsapp
+from app.services.work_order import WorkOrderService
 
-router = APIRouter()
+router = APIRouter(dependencies=[Depends(get_current_user)])
 
 
 class SendBudgetWhatsAppRequest(BaseModel):
@@ -33,6 +34,23 @@ def send_budget_whatsapp(budget_id: int, data: SendBudgetWhatsAppRequest, db: Se
 
     client_name = budget.snapshot_name or "cliente"
     msg = build_budget_message(budget.number, client_name, budget.total, budget.total_usd)
+    result = send_whatsapp(phone, msg)
+    return success(result)
+
+
+@router.post("/send-work-order/{order_id}")
+def send_work_order_whatsapp(order_id: int, data: SendBudgetWhatsAppRequest, db: Session = Depends(get_db)):
+    service = WorkOrderService(db)
+    order = service.get_by_id(order_id)
+    if not order:
+        raise NotFoundError("Work order")
+
+    phone = data.phone or (order.snapshot_phone or "")
+    if not phone:
+        return error("No se pudo determinar el número de teléfono", 400)
+
+    client_name = order.snapshot_name or "cliente"
+    msg = build_work_order_message(order.number, client_name, order.status, order.total, order.total_usd)
     result = send_whatsapp(phone, msg)
     return success(result)
 

@@ -7,24 +7,127 @@ import styles from "./Reports.module.css";
 
 const MONTHS = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
 
+const PIE_COLORS: Record<string, string> = {
+  pending: "#3b82f6",
+  approved: "#22c55e",
+  rejected: "#ef4444",
+  budgeted: "#f59e0b",
+  in_production: "#8b5cf6",
+  finished: "#06b6d4",
+  delivered: "#6366f1",
+};
+
+const BUDGET_STATUS_LABELS: Record<string, string> = {
+  pending: "Pendientes",
+  approved: "Aprobados",
+  rejected: "Rechazados",
+};
+
+const WORK_STATUS_LABELS: Record<string, string> = {
+  budgeted: "Presupuestadas",
+  in_production: "En producción",
+  finished: "Terminadas",
+  delivered: "Entregadas",
+};
+
+function PieChart({
+  data,
+}: {
+  data: { label: string; value: number; color: string }[];
+}) {
+  const total = data.reduce((s, d) => s + d.value, 0);
+  if (total === 0) return <p className={styles.reports__empty}>Sin datos</p>;
+  const size = 180;
+  const cx = size / 2;
+  const cy = size / 2;
+  const r = size / 2 - 10;
+  let currentAngle = -Math.PI / 2;
+  const slices = data.map((d) => {
+    const angle = (d.value / total) * 2 * Math.PI;
+    const startX = cx + r * Math.cos(currentAngle);
+    const startY = cy + r * Math.sin(currentAngle);
+    const endAngle = currentAngle + angle;
+    const endX = cx + r * Math.cos(endAngle);
+    const endY = cy + r * Math.sin(endAngle);
+    const largeArc = angle > Math.PI ? 1 : 0;
+    const path = `M ${cx} ${cy} L ${startX} ${startY} A ${r} ${r} 0 ${largeArc} 1 ${endX} ${endY} Z`;
+    const midAngle = currentAngle + angle / 2;
+    const labelX = cx + (r + 24) * Math.cos(midAngle);
+    const labelY = cy + (r + 24) * Math.sin(midAngle);
+    const pct = ((d.value / total) * 100).toFixed(0);
+    currentAngle = endAngle;
+    return { path, color: d.color, label: d.label, value: d.value, pct, labelX, labelY };
+  });
+  return (
+    <div className={styles.reports__pieWrapper}>
+      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
+        {slices.map((s, i) => (
+          <path key={i} d={s.path} fill={s.color} stroke="#fff" strokeWidth="2" />
+        ))}
+        {slices.map((s, i) => (
+          <text
+            key={`l${i}`}
+            x={s.labelX}
+            y={s.labelY}
+            textAnchor="middle"
+            dominantBaseline="middle"
+            fontSize="11"
+            fontWeight="600"
+            fill="#333"
+          >
+            {s.pct}%
+          </text>
+        ))}
+      </svg>
+      <div className={styles.reports__pieLegend}>
+        {slices.map((s, i) => (
+          <div key={i} className={styles.reports__pieLegendItem}>
+            <span className={styles.reports__pieDot} style={{ background: s.color }} />
+            <span className={styles.reports__pieLegendLabel}>{s.label}</span>
+            <span className={styles.reports__pieLegendValue}>{s.value}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export function Reports() {
   const [selectedStatus, setSelectedStatus] = useState("pending");
   const [budgetsByStatus, setBudgetsByStatus] = useState<any[]>([]);
   const [ordersInProduction, setOrdersInProduction] = useState<WorkOrder[]>([]);
   const [monthlySales, setMonthlySales] = useState<{ month: string; total: number; total_usd: number }[]>([]);
   const [mostUsed, setMostUsed] = useState<{ name: string; usage_count: number }[]>([]);
+  const [budgetPie, setBudgetPie] = useState<{ status: string; count: number }[]>([]);
+  const [workOrderPie, setWorkOrderPie] = useState<{ status: string; count: number }[]>([]);
   const [loading, setLoading] = useState(true);
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
 
   const load = useCallback(async () => {
     setLoading(true);
     await Promise.allSettled([
-      api.getBudgetsByStatus(selectedStatus).then(setBudgetsByStatus),
-      api.getWorkOrdersByStatus("in_production").then(setOrdersInProduction as any),
-      api.getMonthlySales().then(setMonthlySales),
+      api.getBudgetsByStatus(selectedStatus, dateFrom || undefined, dateTo || undefined).then(setBudgetsByStatus),
+      api.getWorkOrdersByStatus("in_production", dateFrom || undefined, dateTo || undefined).then(setOrdersInProduction as any),
+      api.getMonthlySales(undefined, dateFrom || undefined, dateTo || undefined).then(setMonthlySales),
       api.getMostUsedMaterials().then(setMostUsed),
     ]);
+    const [budgetCounts, workCounts] = await Promise.all([
+      Promise.all(
+        ["pending", "approved", "rejected"].map((s) =>
+          api.getBudgetsByStatus(s, dateFrom || undefined, dateTo || undefined).then((r) => ({ status: s, count: r.length }))
+        )
+      ),
+      Promise.all(
+        ["budgeted", "in_production", "finished", "delivered"].map((s) =>
+          api.getWorkOrdersByStatus(s, dateFrom || undefined, dateTo || undefined).then((r) => ({ status: s, count: r.length }))
+        )
+      ),
+    ]);
+    setBudgetPie(budgetCounts);
+    setWorkOrderPie(workCounts);
     setLoading(false);
-  }, [selectedStatus]);
+  }, [selectedStatus, dateFrom, dateTo]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -36,9 +139,31 @@ export function Reports() {
     color: "#1a1a2e",
   }));
 
+  const budgetPieData = budgetPie
+    .filter((d) => d.count > 0)
+    .map((d) => ({ label: BUDGET_STATUS_LABELS[d.status] || d.status, value: d.count, color: PIE_COLORS[d.status] || "#999" }));
+
+  const workOrderPieData = workOrderPie
+    .filter((d) => d.count > 0)
+    .map((d) => ({ label: WORK_STATUS_LABELS[d.status] || d.status, value: d.count, color: PIE_COLORS[d.status] || "#999" }));
+
   return (
     <div className={styles.reports}>
       <h2 className={styles.reports__title}>Reportes</h2>
+
+      <div className={styles.reports__filters}>
+        <label className={styles.reports__filterLabel}>
+          Desde
+          <input className={styles.reports__filterInput} type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} />
+        </label>
+        <label className={styles.reports__filterLabel}>
+          Hasta
+          <input className={styles.reports__filterInput} type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} />
+        </label>
+        {(dateFrom || dateTo) && (
+          <button className={styles.reports__filterClear} onClick={() => { setDateFrom(""); setDateTo(""); }}>Limpiar</button>
+        )}
+      </div>
 
       {loading && <LoadingSpinner />}
 
@@ -68,6 +193,18 @@ export function Reports() {
                   </tbody>
                 </table>
               )}
+            </section>
+          </div>
+
+          <div className={styles.reports__grid}>
+            <section className={styles.reports__section}>
+              <h3 className={styles.reports__sectionTitle}>Presupuestos por estado</h3>
+              <PieChart data={budgetPieData} />
+            </section>
+
+            <section className={styles.reports__section}>
+              <h3 className={styles.reports__sectionTitle}>Órdenes por estado</h3>
+              <PieChart data={workOrderPieData} />
             </section>
           </div>
 
