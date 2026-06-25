@@ -284,6 +284,13 @@
   background: #f8f8f8;
 }
 
+.portfolio__loading {
+  text-align: center;
+  padding: 3rem 1rem;
+  color: #666;
+  font-size: 1rem;
+}
+
 .portfolio__grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));

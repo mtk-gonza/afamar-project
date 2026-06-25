@@ -1,19 +1,25 @@
 import logging
-
 from sqlalchemy import create_engine, event, inspect, text
 from sqlalchemy.orm import DeclarativeBase, sessionmaker
-
+from sqlalchemy.pool import QueuePool
 from app.core.config import settings
 
 logger = logging.getLogger(__name__)
 
+_connect_args = {"charset": "utf8mb4"} if not settings.is_development else {}
+
 engine = create_engine(
-    settings.database_url,
-    connect_args={"check_same_thread": False} if "sqlite" in settings.database_url else {},
-    echo=settings.debug,
+    str(settings.DATABASE_URL),
+    poolclass=QueuePool,
+    pool_size=settings.DB_POOL_SIZE,
+    max_overflow=settings.DB_MAX_OVERFLOW,
+    pool_pre_ping=True,
+    echo=settings.DB_ECHO,
+    connect_args=_connect_args,
+    pool_recycle=3600
 )
 
-if "sqlite" in settings.database_url:
+if "sqlite" in settings.DATABASE_URL:
     @event.listens_for(engine, "connect")
     def set_sqlite_pragma(dbapi_connection, connection_record):
         cursor = dbapi_connection.cursor()
@@ -34,6 +40,8 @@ def get_db():
     finally:
         db.close()
 
+def dispose_db():
+    engine.dispose()
 
 _TYPE_MAP = {
     "INTEGER": "INTEGER",

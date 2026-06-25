@@ -42,7 +42,7 @@ cd afamar-project
 ### 2.1 Crear entorno virtual e instalar dependencias
 
 ```bash
-cd backend
+cd afamar-backend
 
 # Crear el entorno virtual
 python -m venv venv
@@ -63,14 +63,14 @@ pip install -r requirements.txt
 ### 2.2 Configurar variables de entorno
 
 El archivo `.env.example` ya viene con valores por defecto:
-crear.env y rellenar con los valores que hagan faltagi
+crear .env y rellenar con los valores que hagan falta
 ```env
 # Database
 DATABASE_URL=sqlite:///./afamar.db
 # DATABASE_URL=mysql+pymysql://user:password@localhost:3306/afamar
 # App
 APP_NAME=AFAMAR
-APP_VERSION=1.0.0
+APP_VERSION=1.1.0
 DEBUG=true
 # CORS
 CORS_ORIGINS=http://localhost:3090,http://localhost:3000
@@ -117,7 +117,7 @@ ruff check .
 ### 3.1 Instalar dependencias
 
 ```bash
-cd frontend
+cd afamar-frontend
 npm install
 ```
 
@@ -173,23 +173,24 @@ docker compose down
 
 ```
 afamar-project/
-├── backend/
+├── afamar-backend/
 │   ├── app/
 │   │   ├── main.py              # Entrypoint, crea tablas y datos semilla
 │   │   ├── core/                # Config, database engine, dependencias
-│   │   ├── models/              # Modelos ORM (Client, Budget, WorkOrder, Material, PoolStock, Setting, AppOption)
+│   │   ├── models/              # Modelos ORM (Client, Budget, WorkOrder, Material, PoolStock, Setting, AppOption, Measurement, OnlineBudget, PriceHistory, ProductPhoto, User, DailyCash, CashMovement, BudgetStatus, WorkOrderStatus, PaymentMethod, PriorityLevel, FinishType)
 │   │   ├── schemas/             # Schemas Pydantic request/response
 │   │   ├── api/v1/              # Endpoints REST agrupados por recurso
 │   │   ├── services/            # Lógica de negocio
 │   │   ├── repositories/        # Capa de acceso a datos
 │   │   └── utils/               # Auto-numeración, datos semilla, paginación
 │   ├── tests/
-│   │   ├── conftest.py          # Fixtures de pytest (TestClient, BD en memoria)
-│   │   └── test_api.py          # Tests de integración
+│   │   ├── conftest.py          # Fixtures de pytest (TestClient, BD basada en archivo para soporte multi-thread)
+│   │   ├── test_api.py          # Tests de integración
+│   │   └── test_product_photos.py # Tests de fotos de productos
 │   ├── requirements.txt
 │   ├── .env
 │   └── Dockerfile
-├── frontend/
+├── afamar-frontend/
 │   ├── src/
 │   │   ├── main.tsx             # Entrypoint React
 │   │   ├── App.tsx              # Router
@@ -198,7 +199,7 @@ afamar-project/
 │   │   ├── hooks/               # useApi, useMutation
 │   │   ├── context/             # NotificationContext
 │   │   ├── components/          # Layout, ErrorBoundary
-│   │   ├── pages/               # Dashboard, Budgets, WorkOrders, Clients, Materials, PoolStock, Settings
+│   │   ├── pages/               # Dashboard, Budgets, WorkOrders, Clients, Materials, PoolStock, Measurements, OnlineBudgets, Calculator, Reports, Settings, DailyCash, ProductPhotos, Login, Public
 │   │   └── styles/              # Estilos globales y módulos CSS con BEM
 │   ├── package.json
 │   └── Dockerfile
@@ -226,15 +227,15 @@ afamar-project/
 
 ```bash
 # Backend
-cd backend
-venv\Scripts\Activate.ps1        # Activar venv (Windows PowerShell)
+cd afamar-backend
+.\venv\Scripts\Activate.ps1        # Activar venv (Windows PowerShell)
 pip install -r requirements.txt  # Instalar dependencias
 uvicorn app.main:app --reload --port 3095    # Servidor dev :3095
 ruff check .                     # Linter
 pytest                           # Tests
 
 # Frontend
-cd frontend
+cd afamar-frontend
 npm install                      # Instalar dependencias
 npm run dev                      # Servidor dev :3090
 npm run build                    # Build producción (tsc + vite)

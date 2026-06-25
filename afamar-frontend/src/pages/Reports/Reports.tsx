@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { api } from "../../api/client";
 import { LoadingSpinner } from "../../components/ui/LoadingSpinner";
 import { ChartBar } from "../../components/ui/ChartBar";
+import { PieChart } from "../../components/ui/PieChart";
 import type { WorkOrder } from "../../types";
 import styles from "./Reports.module.css";
 
@@ -29,68 +30,6 @@ const WORK_STATUS_LABELS: Record<string, string> = {
   finished: "Terminadas",
   delivered: "Entregadas",
 };
-
-function PieChart({
-  data,
-}: {
-  data: { label: string; value: number; color: string }[];
-}) {
-  const total = data.reduce((s, d) => s + d.value, 0);
-  if (total === 0) return <p className={styles.reports__empty}>Sin datos</p>;
-  const size = 180;
-  const cx = size / 2;
-  const cy = size / 2;
-  const r = size / 2 - 10;
-  let currentAngle = -Math.PI / 2;
-  const slices = data.map((d) => {
-    const angle = (d.value / total) * 2 * Math.PI;
-    const startX = cx + r * Math.cos(currentAngle);
-    const startY = cy + r * Math.sin(currentAngle);
-    const endAngle = currentAngle + angle;
-    const endX = cx + r * Math.cos(endAngle);
-    const endY = cy + r * Math.sin(endAngle);
-    const largeArc = angle > Math.PI ? 1 : 0;
-    const path = `M ${cx} ${cy} L ${startX} ${startY} A ${r} ${r} 0 ${largeArc} 1 ${endX} ${endY} Z`;
-    const midAngle = currentAngle + angle / 2;
-    const labelX = cx + (r + 24) * Math.cos(midAngle);
-    const labelY = cy + (r + 24) * Math.sin(midAngle);
-    const pct = ((d.value / total) * 100).toFixed(0);
-    currentAngle = endAngle;
-    return { path, color: d.color, label: d.label, value: d.value, pct, labelX, labelY };
-  });
-  return (
-    <div className={styles.reports__pieWrapper}>
-      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
-        {slices.map((s, i) => (
-          <path key={i} d={s.path} fill={s.color} stroke="#fff" strokeWidth="2" />
-        ))}
-        {slices.map((s, i) => (
-          <text
-            key={`l${i}`}
-            x={s.labelX}
-            y={s.labelY}
-            textAnchor="middle"
-            dominantBaseline="middle"
-            fontSize="11"
-            fontWeight="600"
-            fill="#333"
-          >
-            {s.pct}%
-          </text>
-        ))}
-      </svg>
-      <div className={styles.reports__pieLegend}>
-        {slices.map((s, i) => (
-          <div key={i} className={styles.reports__pieLegendItem}>
-            <span className={styles.reports__pieDot} style={{ background: s.color }} />
-            <span className={styles.reports__pieLegendLabel}>{s.label}</span>
-            <span className={styles.reports__pieLegendValue}>{s.value}</span>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
 
 export function Reports() {
   const [selectedStatus, setSelectedStatus] = useState("pending");

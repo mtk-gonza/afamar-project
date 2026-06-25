@@ -11,6 +11,8 @@
 
 ## Auth system
 
+- **Product photos (public GETs):** `GET /api/v1/product-photos/latest` and `GET /api/v1/product-photos` are public (no auth). POST/PUT/DELETE require `Depends(get_current_user)`.
+- **Upload validation:** Backend validates file type (`.jpg`, `.jpeg`, `.png`, `.webp`) and size (30MB). Images are resized to max 1920px and converted to WebP quality 85 via Pillow.
 - **Backend JWT auth:** `POST /api/v1/auth/login` → returns `access_token` + `user`
 - **User model:** `users` table with username, email, hashed_password, full_name, is_active, is_admin
 - **Password hashing:** passlib bcrypt (requires bcrypt==4.1.3 for passlib compatibility)
@@ -31,14 +33,14 @@ afamar-backend/    — FastAPI app
   app/
     main.py        — entrypoint, creates all tables on startup
     core/          — config, database engine, dependencies
-    models/        — SQLAlchemy ORM models (Client, Budget, WorkOrder, Material, PoolStock, Setting, AppOption, Measurement, OnlineBudget, PriceHistory, reference tables)
+    models/        — SQLAlchemy ORM models (Client, Budget, WorkOrder, Material, PoolStock, Setting, AppOption, Measurement, OnlineBudget, PriceHistory, ProductPhoto, reference tables)
     schemas/       — Pydantic request/response schemas (includes reference.py)
     api/v1/        — REST endpoints grouped by resource (includes references.py)
-    services/      — business logic layer (budget, work_order, material, measurement, online_budget, report, whatsapp)
+    services/      — business logic layer (budget, work_order, material, measurement, online_budget, report, whatsapp, product_photo)
     repositories/  — data access layer (one per model)
     utils/         — auto-numbering (P-000001, A-000001), seed data, pagination
   requirements.txt
-  alembic/         — migration scripts (26893c0fdbc9 is head)
+  alembic/         — migration scripts (b96f5327d74a is head)
   .env             — DATABASE_URL, CORS_ORIGINS, etc.
 
 afamar-frontend/   — Vite + React + TS
@@ -49,10 +51,14 @@ afamar-frontend/   — Vite + React + TS
       client.ts    — typed API client (methods per resource)
       http.ts      — Axios instance with base URL + interceptors
     types/         — shared TypeScript interfaces
-    hooks/         — useApi (data fetching), useMutation
-    context/       — NotificationContext with useNotify toast system
-    components/    — Layout (collapsible sidebar, grouped nav, logo), ErrorBoundary
-    pages/         — one folder per module (Dashboard, Budgets, WorkOrders, Clients, Materials, PoolStock, Measurements, OnlineBudgets, Calculator, Reports, Settings, DailyCash)
+    hooks/         — useApi, useApiList, useApiForm, useMutation
+    context/       — NotificationContext, ReferencesContext (dynamic reference data)
+    components/    — Layout, ErrorBoundary, ui/ (ListPage, StatusBadge, PageHeader, TableActions, FormActions, PieChart, ErrorBlock, useConfirm)
+    pages/         — one folder per module
+      Budgets/     — BudgetForm split into 6 sub-components (Client, Specs, Items, Adicionales, Financial, Observations)
+      WorkOrders/  — WorkOrderForm split into 6 sub-components (Basic, Specs, ItemsGrid, Observations, Financial, Snapshot)
+      OnlineBudgets/ — ObFormHeader, ObFormTotals
+      DailyCash/   — CashIncomeFormModal, CashExpenseFormModal
     styles/        — global CSS, each component has own .module.css with BEM
 ```
 
@@ -75,6 +81,42 @@ Note: both project folders carry the `afamar-` prefix (afamar-backend, afamar-fr
 - `style={{ gridColumn: "1 / -1" }}` for full-width fieldsets/fields in forms
 - fieldset + legend pattern for form sections in enhanced forms (BudgetForm, WorkOrderForm)
 - Bar chart implemented with inline div styles (Dashboard monthly bars, Reports sales chart)
+- Reference data (statuses, priorities, payment methods) comes from `ReferencesContext` — never hardcoded constants for dynamic data. `src/constants/index.ts` keeps only immutable values (currencies, movement types, measurement statuses) and color maps.
+- `BudgetFormFinancial`, `CashIncomeFormModal` receive `paymentMethods` from references context.
+- `WoFormBasic` receives `workOrderStatuses` + `priorityLevels` from references context for status buttons/priority select.
+- `Budgets` receives `budgetStatuses` from references context for approval logic.
+- `WorkOrders.tsx` compares priority against `"Urgente"` (matches DB reference value).
+
+## Refactoring Progress
+
+### Status: ✅ COMPLETED
+
+**Phase 1 — Shared hooks + utils + UI components** ✅
+- `useApiList`, `useApiForm`, `useDebounce` hooks
+- `formatCurrency`, `calcM2`, `downloadPdf`, `whatsapp` utils
+- `ListPage`, `PageHeader`, `StatusBadge`, `TableActions`, `FormActions`, `ErrorBlock`, `LoadingSpinner`, `EmptyState`, `Modal`, `ConfirmDialog`, `useConfirm`, `SearchInput`, `PieChart`, `ChartBar`, `Container`
+
+**Phase 2 — References dynamicas** ✅
+- Backend: GET `/api/v1/references/{resource}` made public (split `auth_router`)
+- Frontend: `ReferencesContext` fetches all 5 types on mount via `Promise.all`
+- Consumers migrated: `Budgets`, `WoFormBasic`, `CashIncomeFormModal`, `BudgetFormFinancial`
+- `src/constants/index.ts` cleaned: removed `BUDGET_STATUSES`, `WORK_ORDER_STATUSES`, `PRIORITY_LEVELS`, `PAYMENT_METHODS` (kept immutable only)
+
+**Phase 3 — Form splitting** ✅
+- `BudgetForm.tsx` (574→~130 lines) → 6 sub-components
+- `WorkOrderForm.tsx` (478→~130 lines) → 6 sub-components
+- `OnlineBudgetForm.tsx` (607→~430 lines) → 2 sub-components
+- `DailyCashPage.tsx` (516→~320 lines) → 2 sub-components
+
+**Phase 4 — Bug fixes** ✅
+- Fixed `onRemove` filtering in BudgetFormItems (was filtering by index instead of `_key`)
+- Removed unused imports in MeasurementForm/Measurements
+- Fixed unused vars in WoFormObservations
+- Fixed priority comparison in WorkOrders.tsx (`"urgent"` → `"Urgente"`)
+
+### Knowledge transfer: `afamar` (old project at D:\projects\PERSONAL\afamar)
+
+The same refactoring patterns apply 1:1 — form splitting, shared hooks, shared UI components. The old project uses Tailwind instead of CSS Modules, has no auth system, no ReferencesContext (no backend reference endpoints), and uses Recharts instead of custom SVG charts. All business features (budgets, work orders, materials, measurements, pool stock, online budgets, reports, settings, calculator, daily cash) exist in both projects.
 
 ## Commands
 
@@ -118,7 +160,7 @@ npm run preview                      # preview production build
 - WorkOrders page has view toggle: Table view (default) and Kanban view grouped by status columns.
 - `api/client.ts` uses typed wraps — each method typed with proper response interface instead of `any`.
 - `api/client.ts` mutation methods (`create*`, `update*`) use `data: any` instead of `data: Partial<T>` because forms pass shape-mismatched data (e.g. `ItemRow[]` instead of `BudgetItem[]`).
-- `vite.config.ts` has a proxy (`/api` → `http://localhost:3095`) so in dev mode requests go through Vite, avoiding CORS. The default `http.ts` `baseURL` is `/api/v1` (relative). Override via `VITE_API_URL` env var for production.
+- `vite.config.ts` has proxies (`/api` → `http://localhost:3095` and `/uploads` → `http://localhost:3095`) so in dev mode requests go through Vite, avoiding CORS. The default `http.ts` `baseURL` is `/api/v1` (relative). Override via `VITE_API_URL` env var for production or via `window.APP_CONFIG?.API_URL` for runtime config.
 - Dual currency support: Budget and WorkOrder have ARS fields (`total`, `subtotal`, etc.) and USD fields (`total_usd`, `subtotal_usd`, `transport_usd`) plus `usd_rate` for exchange rate.
 - Reference tables (budget_statuses, work_order_statuses, payment_methods, priority_levels, finish_types) are created by Alembic migration and seeded with initial values (Spanish status keys, payment methods, priority levels, finish types). The FK columns on budgets/work_orders reference these tables but the string `status`/`priority`/`payment_method` fields remain as denormalized copies for backward compatibility.
 - Budget enhancement fields: `adicionales` (separate table), `pool_id`/`pool_price`/`pool_currency`, `deposit_received`/`deposit_usd`/`balance_due`/`balance_due_usd`/`balance_paid`, `payment_method`/`installments`, `digital_signature`/`signed_at`, `snapshot_name/phone/email/address`, `design_observations`/`important_observations`/`fabrication_details`, `estimated_date`/`validity_days`, `materials_data`/`pools_data`.
@@ -142,11 +184,39 @@ npm run preview                      # preview production build
 
 - `afamar-frontend/src/types/index.ts`: All TypeScript interfaces (updated with Measurement, OnlineBudget, PriceHistory, SearchResults, BudgetAdicional, BudgetSketchElement, enhanced Budget/WorkOrder/Material/PoolStock).
 - `afamar-frontend/src/api/client.ts`: All API methods (includes search, reports, measurements, online_budgets, whatsapp, most_used_materials).
-- `afamar-frontend/src/pages/Budgets/BudgetForm.tsx`: Enhanced with dual currency, adicionales section, pool selection, financial fields, client snapshot, 4 observation textareas, signature.
+- `afamar-frontend/src/pages/Budgets/BudgetForm.tsx`: Orchestrator (~130 lines), delegates to 6 sub-components.
+- `afamar-frontend/src/pages/Budgets/BudgetFormClient.tsx`: Client selector + snapshot fields.
+- `afamar-frontend/src/pages/Budgets/BudgetFormSpecs.tsx`: Material/color/thickness/front/finish/bacha/anafe/perforations.
+- `afamar-frontend/src/pages/Budgets/BudgetFormItems.tsx`: Items grid + fabrication tabs + ItemInputRow.
+- `afamar-frontend/src/pages/Budgets/BudgetFormAdicionales.tsx`: Adicionales rows.
+- `afamar-frontend/src/pages/Budgets/BudgetFormFinancial.tsx`: Pool + financial fields + commercial info + totals.
+- `afamar-frontend/src/pages/Budgets/BudgetFormObservations.tsx`: 3 observation textareas + client snapshot.
 - `afamar-frontend/src/pages/Budgets/BudgetForm.module.css`: CSS grid for item/adicional rows, fieldset styling.
-- `afamar-frontend/src/pages/Budgets/Budgets.tsx`: List with new columns (USD, balance) and action buttons (PDF, Email, WA).
-- `afamar-frontend/src/pages/WorkOrders/WorkOrderForm.tsx`: Enhanced with status transitions, fabrication details, pool, dual currency, financial fields, snapshot.
+- `afamar-frontend/src/pages/Budgets/Budgets.tsx`: List with USD/balance columns + action buttons, uses `useReferences()`.
+- `afamar-frontend/src/pages/Budgets/BudgetForm.module.css`: CSS grid for item/adicional rows, fieldset styling.
+- `afamar-frontend/src/pages/WorkOrders/WorkOrderForm.tsx`: Orchestrator (~130 lines), delegates to 6 sub-components.
+- `afamar-frontend/src/pages/WorkOrders/WoFormBasic.tsx`: Client/status/priority/delivery date, uses `useReferences()`.
+- `afamar-frontend/src/pages/WorkOrders/WoFormSpecs.tsx`: Material/color/thickness/bacha/anafe.
+- `afamar-frontend/src/pages/WorkOrders/WoFormItemsGrid.tsx`: Reusable items table.
+- `afamar-frontend/src/pages/WorkOrders/WoFormObservations.tsx`: Design/important observations + sketch + signature.
+- `afamar-frontend/src/pages/WorkOrders/WoFormFinancial.tsx`: Pool + currency + dual currency values + payment info.
+- `afamar-frontend/src/pages/WorkOrders/WoFormSnapshot.tsx`: Snapshot fields + general notes.
 - `afamar-frontend/src/pages/WorkOrders/WorkOrders.tsx`: Enhanced table columns + Kanban card info.
+- `afamar-frontend/src/context/ReferencesContext.tsx`: Fetches all 5 reference types on mount, provides via `useReferences()` hook.
+- `afamar-frontend/src/components/ui/ListPage.tsx`: Reusable list page with loading/error/empty states.
+- `afamar-frontend/src/components/ui/StatusBadge.tsx`: Colored badge for status/priority display.
+- `afamar-frontend/src/components/ui/PageHeader.tsx`: Title + optional add button.
+- `afamar-frontend/src/components/ui/TableActions.tsx`: Edit/delete dropdown with extra action slots.
+- `afamar-frontend/src/components/ui/FormActions.tsx`: Submit/cancel buttons with loading state.
+- `afamar-frontend/src/components/ui/PieChart.tsx`: Simple inline pie chart.
+- `afamar-frontend/src/components/ui/ErrorBlock.tsx`: Error message with retry button.
+- `afamar-frontend/src/components/ui/useConfirm.ts`: Confirmation dialog hook.
+- `afamar-frontend/src/hooks/useApiList.ts`: Generic list hook with loading/error state.
+- `afamar-frontend/src/hooks/useApiForm.ts`: Generic form fetch/submit hook.
+- `afamar-frontend/src/utils/formatCurrency.ts`: ARS/USD/balance/date formatting.
+- `afamar-frontend/src/utils/downloadPdf.ts`: PDF download helper.
+- `afamar-frontend/src/utils/whatsapp.ts`: WhatsApp link builder.
+- `afamar-frontend/src/utils/calcM2.ts`: M² calculation utilities.
 - `afamar-frontend/src/pages/Dashboard/Dashboard.tsx`: Branded header, bar chart, recent items, online budgets card.
 - `afamar-frontend/src/pages/Reports/Reports.tsx`: Monthly sales bar chart, most-used materials, budget status filter.
 - `afamar-frontend/src/pages/Settings/Settings.tsx`: Logo upload field (file + URL).
@@ -156,12 +226,14 @@ npm run preview                      # preview production build
 - `afamar-frontend/src/pages/OnlineBudgets/`: Page with list, form, pool selector.
 - `afamar-frontend/src/pages/Calculator/`: Calculator with m² and ARS/USD.
 - `afamar-frontend/src/pages/DailyCash/`: Cash module with DailyCashPage (daily form) and CashHistory (closed days history).
+- `afamar-frontend/src/pages/ProductPhotos/`: Photo gallery page with upload, inline edit, lightbox, and delete (uses `useConfirm` + `useNotify`).
+- `afamar-frontend/src/api/resources/productPhotos.ts`: API client for product photos CRUD + latest endpoint.
 - `afamar-backend/app/schemas/budget.py`: Pydantic schemas with all enhanced fields (uses `Optional[date]`/`Optional[datetime]`).
 - `afamar-backend/app/schemas/work_order.py`: WorkOrder schemas (uses `Optional[date]`/`Optional[datetime]`).
 - `afamar-backend/app/schemas/measurement.py`: Measurement schemas.
 - `afamar-backend/app/schemas/online_budget.py`: OnlineBudget schemas.
-- `afamar-backend/app/services/*.py`: All services (budget, work_order, material, measurement, online_budget, report, whatsapp).
-- `afamar-backend/app/api/v1/*.py`: All API endpoints (budgets, work_orders, materials, measurements, online_budgets, whatsapp, search, reports, router).
+- `afamar-backend/app/services/*.py`: All services (budget, work_order, material, measurement, online_budget, report, whatsapp, product_photo).
+- `afamar-backend/app/api/v1/*.py`: All API endpoints (budgets, work_orders, materials, measurements, online_budgets, whatsapp, search, reports, product_photos, router).
 - `afamar-backend/app/models/reference.py`: Reference tables (BudgetStatus, WorkOrderStatus, PaymentMethod, PriorityLevel, FinishType) with FK relationships to Budget/WorkOrder.
 - `afamar-backend/app/schemas/reference.py`: Pydantic schemas for reference CRUD.
 - `afamar-backend/app/api/v1/references.py`: Generic CRUD endpoints for all reference tables at `/api/v1/references/{resource}`.
@@ -176,6 +248,11 @@ npm run preview                      # preview production build
 - `afamar-backend/alembic/versions/85179924c32e_add_new_models_and_columns.py`: Migration for all new tables/columns.
 - `afamar-backend/app/utils/seed.py`: Seed with PriceHistory and company_logo.
 - `afamar-backend/app/core/config.py`: WhatsApp settings added.
-- `afamar-backend/app/utils/seed.py`: Seed with PriceHistory and company_logo.
-- `afamar-backend/app/core/config.py`: WhatsApp settings added.
 - `afamar-backend/requirements.txt`: `requests` added.
+- `afamar-backend/alembic/versions/b96f5327d74a_add_product_photos.py`: Creates `product_photos` table.
+- `afamar-backend/app/models/product_photo.py`: ProductPhoto model (file_path, title, description, timestamps).
+- `afamar-backend/app/schemas/product_photo.py`: ProductPhoto Pydantic schemas.
+- `afamar-backend/app/repositories/product_photo.py`: ProductPhotoRepository with get_latest().
+- `afamar-backend/app/services/product_photo.py`: ProductPhotoService with upload validation, Pillow resize/convert to WebP.
+- `afamar-backend/app/api/v1/product_photos.py`: Product photos CRUD endpoints — GETs are public, POST/PUT/DELETE require auth.
+- `afamar-backend/tests/test_product_photos.py`: 9 tests covering upload, validation, resize, update, delete, 404, public access.

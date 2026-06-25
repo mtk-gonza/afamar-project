@@ -1,0 +1,148 @@
+.productPhotos {
+  padding: 1.5rem;
+}
+
+.productPhotos__title {
+  margin-bottom: 1rem;
+  font-size: 1.5rem;
+}
+
+.productPhotos__upload {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-bottom: 1.5rem;
+  padding: 1rem;
+  background: #f5f5f5;
+  border-radius: 8px;
+}
+
+.productPhotos__input {
+  padding: 0.5rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 0.9rem;
+}
+
+.productPhotos__submit {
+  padding: 0.5rem 1rem;
+  background: #007bff;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.productPhotos__submit:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.productPhotos__error {
+  color: #d32f2f;
+  margin-bottom: 1rem;
+}
+
+.productPhotos__loading {
+  text-align: center;
+  color: #666;
+  padding: 2rem;
+}
+
+.productPhotos__empty {
+  text-align: center;
+  color: #666;
+  padding: 2rem;
+}
+
+.productPhotos__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 1rem;
+}
+
+.productPhotos__card {
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #fff;
+}
+
+.productPhotos__img {
+  width: 100%;
+  height: 200px;
+  object-fit: cover;
+  display: block;
+  cursor: pointer;
+}
+
+.productPhotos__info {
+  padding: 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  font-size: 0.85rem;
+}
+
+.productPhotos__actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.25rem;
+}
+
+.productPhotos__editBtn {
+  background: none;
+  border: none;
+  color: #007bff;
+  cursor: pointer;
+  padding: 0;
+  font-size: 0.85rem;
+}
+
+.productPhotos__delete {
+  background: none;
+  border: none;
+  color: #d32f2f;
+  cursor: pointer;
+  padding: 0;
+  font-size: 0.85rem;
+}
+
+.productPhotos__editForm {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.productPhotos__editActions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.productPhotos__saveBtn {
+  padding: 0.25rem 0.75rem;
+  background: #28a745;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.85rem;
+}
+
+.productPhotos__cancelBtn {
+  padding: 0.25rem 0.75rem;
+  background: #6c757d;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.85rem;
+}
+
+.productPhotos__lightboxImg {
+  width: 100%;
+  height: auto;
+  display: block;
+  border-radius: 12px;
+}

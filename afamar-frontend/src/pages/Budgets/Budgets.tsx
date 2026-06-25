@@ -1,14 +1,16 @@
-import { useCallback, useEffect, useState } from "react";
+import { useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { api } from "../../api/client";
 import { useNotify } from "../../context/NotificationContext";
 import { useConfirm } from "../../components/ui/useConfirm";
 import { PageHeader } from "../../components/ui/PageHeader";
-import { LoadingSpinner } from "../../components/ui/LoadingSpinner";
-import { ErrorBlock } from "../../components/ui/ErrorBlock";
-import { EmptyState } from "../../components/ui/EmptyState";
 import { StatusBadge } from "../../components/ui/StatusBadge";
 import { TableActions } from "../../components/ui/TableActions";
+import { ListPage } from "../../components/ui/ListPage";
+import { useApiList } from "../../hooks/useApiList";
+import { useReferences } from "../../context/ReferencesContext";
+import { formatARS, formatUSD, formatBalance, formatDate } from "../../utils/formatCurrency";
+import { downloadPdf } from "../../utils/downloadPdf";
 import type { Budget } from "../../types";
 import styles from "./Budgets.module.css";
 
@@ -16,34 +18,20 @@ export function Budgets() {
   const navigate = useNavigate();
   const notify = useNotify();
   const { confirm, dialog } = useConfirm();
-  const [items, setItems] = useState<Budget[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  const load = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      setItems(await api.getBudgets());
-    } catch {
-      setError("Error al cargar presupuestos");
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => { load(); }, [load]);
+  const { items, loading, error, load } = useApiList(() => api.getBudgets(), "Error al cargar presupuestos");
+  const { budgetStatuses } = useReferences();
+  const BS = useMemo(() => Object.fromEntries(budgetStatuses.map((s) => [s.name, s.name])), [budgetStatuses]);
 
   const handleApproval = async (b: Budget) => {
-    if (b.status === "PENDIENTE") {
-      await api.updateBudget(b.id, { status: "APROBADO" });
+    if (b.status === BS.PENDIENTE) {
+      await api.updateBudget(b.id, { status: BS.APROBADO });
       if (await confirm("¿Convertir a Orden de Trabajo?")) {
         await api.createFromBudget(b.id);
       }
-    } else if (b.status === "APROBADO") {
-      await api.updateBudget(b.id, { status: "RECHAZADO" });
+    } else if (b.status === BS.APROBADO) {
+      await api.updateBudget(b.id, { status: BS.RECHAZADO });
     } else {
-      await api.updateBudget(b.id, { status: "PENDIENTE" });
+      await api.updateBudget(b.id, { status: BS.PENDIENTE });
     }
     load();
   };
@@ -54,28 +42,15 @@ export function Budgets() {
     load();
   };
 
-  const handleDownloadPdf = async (b: Budget) => {
-    try {
-      const blob = await api.downloadBudgetPdf(b.id);
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `presupuesto_${b.number}.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-    } catch {
-      notify("Error al descargar PDF", "error");
-    }
-  };
+  const handleDownloadPdf = (b: Budget) =>
+    downloadPdf(() => api.downloadBudgetPdf(b.id), `presupuesto_${b.number}.pdf`, (m) => notify(m, "error"));
 
   const handleSendEmail = async (b: Budget) => {
     try {
       await api.sendBudgetEmail(b.id);
       notify("Email enviado correctamente", "success");
-    } catch (e: any) {
-      notify(e?.response?.data?.detail || "Error al enviar email", "error");
+    } catch {
+      notify("Error al enviar email", "error");
     }
   };
 
@@ -83,8 +58,8 @@ export function Budgets() {
     try {
       await api.sendBudgetWhatsApp(b.id);
       notify("WhatsApp enviado", "success");
-    } catch (e: any) {
-      notify(e.message || "Error al enviar WhatsApp", "error");
+    } catch {
+      notify("Error al enviar WhatsApp", "error");
     }
   };
 
@@ -92,11 +67,7 @@ export function Budgets() {
     <div className={styles.budgets}>
       <PageHeader title="Presupuestos" addLink="/admin/budgets/new" />
 
-      {loading && <LoadingSpinner />}
-      {error && <ErrorBlock message={error} onRetry={load} />}
-      {!loading && !error && items.length === 0 && <EmptyState message="No hay presupuestos aún." />}
-
-      {!loading && !error && items.length > 0 && (
+      <ListPage loading={loading} error={error} items={items} emptyMessage="No hay presupuestos aún." onRetry={load}>
         <table className={styles.budgets__table}>
           <thead>
             <tr><th>Número</th><th>Cliente</th><th>Estado</th><th>Total ARS</th><th>Total USD</th><th>Saldo</th><th>Fecha</th><th>Acciones</th></tr>
@@ -107,12 +78,12 @@ export function Budgets() {
                 <td>{b.number}</td>
                 <td>{b.client_id}</td>
                 <td><StatusBadge status={b.status} /></td>
-                <td>$ {b.total.toFixed(2)}</td>
-                <td>{b.total_usd > 0 ? `US$ ${b.total_usd.toFixed(2)}` : "-"}</td>
-                <td>{b.balance_due > 0 ? `$ ${b.balance_due.toFixed(2)}` : "Pagado"}</td>
-                <td>{new Date(b.created_at).toLocaleDateString()}</td>
+                <td>{formatARS(b.total)}</td>
+                <td>{formatUSD(b.total_usd)}</td>
+                <td>{formatBalance(b.balance_due)}</td>
+                <td>{formatDate(b.created_at)}</td>
                 <TableActions onEdit={() => navigate(`/admin/budgets/${b.id}/edit`)} onDelete={() => handleDelete(b.id, b.number)}>
-                  {b.status === "PENDIENTE" && <button className={styles.budgets__actionBtn} onClick={() => handleApproval(b)}>Aprobar</button>}
+                  {b.status === BS.PENDIENTE && <button className={styles.budgets__actionBtn} onClick={() => handleApproval(b)}>Aprobar</button>}
                   <button className={styles.budgets__actionBtn} title="Descargar PDF" onClick={() => handleDownloadPdf(b)}>PDF</button>
                   <button className={styles.budgets__actionBtn} title="Enviar por email" onClick={() => handleSendEmail(b)}>Email</button>
                   <button className={styles.budgets__actionBtn} title="Enviar por WhatsApp" onClick={() => handleSendWhatsApp(b)}>WA</button>
@@ -121,7 +92,7 @@ export function Budgets() {
             ))}
           </tbody>
         </table>
-      )}
+      </ListPage>
       {dialog}
     </div>
   );

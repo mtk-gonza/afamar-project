@@ -10,6 +10,7 @@ from app.api.v1 import (
     online_budgets,
     options,
     pool_stock,
+    product_photos,
     references,
     reports,
     search,
@@ -33,5 +34,7 @@ router.include_router(measurements.router, prefix="/measurements", tags=["Measur
 router.include_router(online_budgets.router, prefix="/online-budgets", tags=["Online Budgets"])
 router.include_router(whatsapp.router, prefix="/whatsapp", tags=["WhatsApp"])
 router.include_router(search.router, prefix="/search", tags=["Search"])
+router.include_router(product_photos.router, prefix="/product-photos", tags=["Product Photos"])
 router.include_router(daily_cash.router)
 router.include_router(references.router, prefix="/references", tags=["References"])
+router.include_router(references.auth_router, prefix="/references", tags=["References"])

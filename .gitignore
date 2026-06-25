@@ -1,29 +1,56 @@
-# Backend - Python / FastAPI
-afamar-backend/__pycache__/
-afamar-backend/**/__pycache__/
-afamar-backend/*.py[cod]
-afamar-backend/*.egg-info/
-afamar-backend/*.egg
-afamar-backend/.venv/
-afamar-backend/venv/
-afamar-backend/dist/
-afamar-backend/pdfs/
-
-# Frontend - Node / Vite / React
-afamar-frontend/node_modules/
-afamar-frontend/dist/
-afamar-frontend/build/
-afamar-frontend/*.tsbuildinfo
-afamar-frontend/npm-debug.log*
-
-# Environment
+# =========================
+# GENERAL
+# =========================
 .env
-!.env.example
-
-# IDE / OS
-.vscode/
-.idea/
-*.swp
-*.swo
+*.log
+*.pid
 .DS_Store
 Thumbs.db
+
+# =========================
+# PYTHON (FastAPI)
+# =========================
+__pycache__/
+*.py[cod]
+*.sqlite3
+*.db
+
+# Virtual environments
+venv/
+.venv/
+env/
+
+# Coverage / testing
+.coverage
+htmlcov/
+.pytest_cache/
+
+# Logs
+logs/
+app/logs/
+*.log
+
+# =========================
+# NODE (Vite)
+# =========================
+node_modules/
+dist/
+build/
+.vite/
+
+# Debug logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# =========================
+# IDE
+# =========================
+.vscode/
+.idea/
+
+# =========================
+# DOCKER
+# =========================
+*.tar
+docker-data/

@@ -38,6 +38,7 @@ const navGroups = [
     label: "Administración",
     items: [
       { to: "/admin/reports", label: "Reportes" },
+      { to: "/admin/product-photos", label: "Galería" },
       { to: "/admin/settings", label: "Config" },
     ],
   },

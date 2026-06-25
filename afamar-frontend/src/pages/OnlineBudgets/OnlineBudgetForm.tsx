@@ -3,27 +3,18 @@ import { useNavigate, useParams } from "react-router-dom";
 import { api } from "../../api/client";
 import { useNotify } from "../../context/NotificationContext";
 import { ErrorBlock } from "../../components/ui/ErrorBlock";
-import { FormActions } from "../../components/ui/FormActions";
 import type { Material, PoolStock, OnlineBudget } from "../../types";
+import { ObFormHeader } from "./ObFormHeader";
+import { ObFormTotals } from "./ObFormTotals";
 import styles from "./OnlineBudgets.module.css";
 
 interface ItemRow {
-  _key: number;
-  detalle: string;
-  largo: number;
-  ancho: number;
-  m2: number;
-  cantidad: number;
-  moneda: "ARS" | "USD";
-  precio_unitario: number;
-  subtotal: number;
-  es_unidad: boolean;
+  _key: number; detalle: string; largo: number; ancho: number; m2: number;
+  cantidad: number; moneda: "ARS" | "USD"; precio_unitario: number; subtotal: number; es_unidad: boolean;
 }
 
 interface SpecialItemRow extends ItemRow {
-  material: string;
-  pileta_id: number | null;
-  mano_de_obra: number;
+  material: string; pileta_id: number | null; mano_de_obra: number;
 }
 
 const TIPOS_ESPECIALES = [
@@ -75,7 +66,6 @@ export function OnlineBudgetForm() {
   const [convertedNumber, setConvertedNumber] = useState("");
 
   const allItems = [...items, ...especiales];
-
   const totalArs = allItems.reduce((s, i) => (i.moneda === "ARS" ? s + i.subtotal : s), 0);
   const totalUsd = allItems.reduce((s, i) => (i.moneda === "USD" ? s + i.subtotal : s), 0);
   const totalConsolidado = totalArs + totalUsd * usdRate;
@@ -124,7 +114,6 @@ export function OnlineBudgetForm() {
     }
 
     calcRow(list[idx]);
-
     if (isEspecial) setEspeciales(list as SpecialItemRow[]);
     else setItems(list as ItemRow[]);
   };
@@ -134,7 +123,6 @@ export function OnlineBudgetForm() {
     const cant = Number(item.cantidad) || 1;
     const pu = Number(item.precio_unitario) || 0;
     if (item.detalle === "TERMINACION") {
-      // already calculated
     } else if (item.es_unidad) {
       item.subtotal = Math.round(cant * pu * 100) / 100;
     } else if (m2 > 0 && pu > 0) {
@@ -249,9 +237,7 @@ export function OnlineBudgetForm() {
         setConvertedNumber(ob.number);
 
         let parsedItems: any[] = [];
-        try {
-          if (ob.items_data) parsedItems = JSON.parse(ob.items_data);
-        } catch { parsedItems = []; }
+        try { if (ob.items_data) parsedItems = JSON.parse(ob.items_data); } catch { parsedItems = []; }
 
         const phoneVal = parsedItems.find((i: any) => i._meta?.phone)?.phone || "";
         if (phoneVal) setPhone(phoneVal);
@@ -262,25 +248,17 @@ export function OnlineBudgetForm() {
           parsedItems = parsedItems.filter((i: any) => !i._meta);
         }
 
-        const normales = parsedItems
-          .filter((i: any) => !i.es_unidad && !NOMBRES_ESPECIALES.has(i.detalle))
-          .map((i: any) => ({ ...emptyItem("LONGITUD", false), detalle: i.detalle || "LONGITUD", largo: Number(i.largo) || 0, ancho: Number(i.ancho) || 0, m2: Number(i.m2) || 0, cantidad: Math.max(1, Number(i.cantidad) || 1), moneda: i.moneda || "ARS", precio_unitario: Number(i.precio_unitario) || 0, subtotal: Number(i.subtotal) || 0 }));
-        const esp = parsedItems
-          .filter((i: any) => i.es_unidad || NOMBRES_ESPECIALES.has(i.detalle))
-          .map((i: any) => {
-            const e = emptySpecial(i.detalle || "ZOCALOS", i.es_unidad || false);
-            e.largo = Number(i.largo) || 0;
-            e.ancho = Number(i.ancho) || 0;
-            e.m2 = Number(i.m2) || 0;
-            e.cantidad = Math.max(1, Number(i.cantidad) || 1);
-            e.moneda = i.moneda || "ARS";
-            e.precio_unitario = Number(i.precio_unitario) || 0;
-            e.subtotal = Number(i.subtotal) || 0;
-            e.material = i.material || "";
-            e.pileta_id = i.pileta_id || (ob.pool_id || null);
-            e.mano_de_obra = Number(i.mano_de_obra) || 0;
-            return e;
-          });
+        const normales = parsedItems.filter((i: any) => !i.es_unidad && !NOMBRES_ESPECIALES.has(i.detalle)).map((i: any) => ({
+          ...emptyItem("LONGITUD", false), detalle: i.detalle || "LONGITUD", largo: Number(i.largo) || 0, ancho: Number(i.ancho) || 0, m2: Number(i.m2) || 0, cantidad: Math.max(1, Number(i.cantidad) || 1), moneda: i.moneda || "ARS", precio_unitario: Number(i.precio_unitario) || 0, subtotal: Number(i.subtotal) || 0
+        }));
+        const esp = parsedItems.filter((i: any) => i.es_unidad || NOMBRES_ESPECIALES.has(i.detalle)).map((i: any) => {
+          const e = emptySpecial(i.detalle || "ZOCALOS", i.es_unidad || false);
+          e.largo = Number(i.largo) || 0; e.ancho = Number(i.ancho) || 0; e.m2 = Number(i.m2) || 0;
+          e.cantidad = Math.max(1, Number(i.cantidad) || 1); e.moneda = i.moneda || "ARS";
+          e.precio_unitario = Number(i.precio_unitario) || 0; e.subtotal = Number(i.subtotal) || 0;
+          e.material = i.material || ""; e.pileta_id = i.pileta_id || (ob.pool_id || null); e.mano_de_obra = Number(i.mano_de_obra) || 0;
+          return e;
+        });
 
         setItems(normales.length ? normales : [emptyItem("LONGITUD", false)]);
         setEspeciales(esp.length ? esp : [emptySpecial("ZOCALOS", false)]);
@@ -288,9 +266,7 @@ export function OnlineBudgetForm() {
         const matEsp: Record<number, string> = {};
         esp.forEach((e: SpecialItemRow, i: number) => { if (e.material) matEsp[i] = e.material; });
         setMatEspeciales(matEsp);
-      }).catch(() => {
-        notify("Error al cargar presupuesto online", "error");
-      });
+      }).catch(() => notify("Error al cargar presupuesto online", "error"));
     }
     return () => { mounted.current = false; };
   }, [id, loadData, notify]);
@@ -300,29 +276,18 @@ export function OnlineBudgetForm() {
     const metaItem = { _meta: { phone } };
     const itemsForJson = allItems.map((i) => {
       const base: any = {
-        detalle: i.detalle,
-        largo: i.largo,
-        ancho: i.ancho,
-        m2: i.m2,
-        cantidad: i.cantidad,
-        moneda: i.moneda,
-        precio_unitario: i.precio_unitario,
-        subtotal: i.subtotal,
-        es_unidad: i.es_unidad,
+        detalle: i.detalle, largo: i.largo, ancho: i.ancho, m2: i.m2,
+        cantidad: i.cantidad, moneda: i.moneda, precio_unitario: i.precio_unitario,
+        subtotal: i.subtotal, es_unidad: i.es_unidad,
       };
       if ((i as SpecialItemRow).material) base.material = (i as SpecialItemRow).material;
       if ((i as SpecialItemRow).pileta_id) base.pileta_id = (i as SpecialItemRow).pileta_id;
       if ((i as SpecialItemRow).mano_de_obra) base.mano_de_obra = (i as SpecialItemRow).mano_de_obra;
       return base;
     });
-
     const piletaItems = especiales.filter((e) => e.detalle === "PILETA MOD" && e.pileta_id);
-
     return {
-      client_name: clientName,
-      work_type: workType,
-      date,
-      usd_rate: usdRate,
+      client_name: clientName, work_type: workType, date, usd_rate: usdRate,
       items_data: JSON.stringify([...itemsForJson, metaItem]),
       total_net_ars: Math.round(totalArs * 100) / 100,
       total_net_usd: Math.round(totalUsd * 100) / 100,
@@ -357,9 +322,7 @@ export function OnlineBudgetForm() {
     try {
       await navigator.clipboard.writeText(generarWhatsApp());
       notify("Copiado al portapapeles", "success");
-    } catch {
-      notify("Error al copiar", "error");
-    }
+    } catch { notify("Error al copiar", "error"); }
   };
 
   const handleConvertToWorkOrder = async () => {
@@ -393,28 +356,13 @@ export function OnlineBudgetForm() {
         {isEdit ? `Editar Presupuesto ${convertedNumber}` : "Nuevo Presupuesto Online"}
       </h2>
       <form className={styles.onlineBudgets__form} onSubmit={handleSubmit}>
-        {/* Header */}
-        <fieldset className={styles.onlineBudgets__fieldset}>
-          <legend>Datos del presupuesto</legend>
-          <div className={styles.onlineBudgets__grid4}>
-            <label className={styles.onlineBudgets__label}>Cliente / Empresa
-              <input className={styles.onlineBudgets__input} value={clientName} onChange={(e) => setClientName(e.target.value)} required disabled={dataLoading} />
-            </label>
-            <label className={styles.onlineBudgets__label}>Teléfono (WhatsApp)
-              <input className={styles.onlineBudgets__input} value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="Ej: 2215551234" disabled={dataLoading} />
-            </label>
-            <label className={styles.onlineBudgets__label}>Tipo de obra
-              <input className={styles.onlineBudgets__input} value={workType} onChange={(e) => setWorkType(e.target.value)} placeholder="Ej: Cocina, Baño" disabled={dataLoading} />
-            </label>
-            <label className={styles.onlineBudgets__label}>Fecha
-              <input type="date" className={styles.onlineBudgets__input} value={date} onChange={(e) => setDate(e.target.value)} disabled={dataLoading} />
-            </label>
-            <label className={styles.onlineBudgets__label} style={{ fontWeight: 700, color: "#1e40af" }}>Dólar del día
-              <input type="number" step="1" className={styles.onlineBudgets__input} style={{ fontWeight: 700, color: "#1e40af" }}
-                value={usdRate} onChange={(e) => setUsdRate(Number(e.target.value) || 0)} disabled={dataLoading} />
-            </label>
-          </div>
-        </fieldset>
+        <ObFormHeader
+          clientName={clientName} phone={phone} workType={workType}
+          date={date} usdRate={usdRate} dataLoading={dataLoading}
+          onClientNameChange={setClientName} onPhoneChange={setPhone}
+          onWorkTypeChange={setWorkType} onDateChange={setDate}
+          onUsdRateChange={setUsdRate}
+        />
 
         {/* PRODUCCION ESTANDAR */}
         <fieldset className={styles.onlineBudgets__fieldset}>
@@ -566,41 +514,13 @@ export function OnlineBudgetForm() {
           </div>
         </fieldset>
 
-        {/* Totals */}
-        <fieldset className={styles.onlineBudgets__fieldset}>
-          <legend>Totales</legend>
-          <div className={styles.onlineBudgets__totalsRow}>
-            <div className={styles.onlineBudgets__totalBox}>
-              <span className={styles.onlineBudgets__totalLabel}>TOTAL NETO ARS</span>
-              <span className={styles.onlineBudgets__totalValue}>$ {totalArs.toLocaleString("es-AR", { minimumFractionDigits: 2 })}</span>
-            </div>
-            {hayUSD && (
-              <div className={styles.onlineBudgets__totalBox}>
-                <span className={styles.onlineBudgets__totalLabel}>TOTAL NETO USD</span>
-                <span className={styles.onlineBudgets__totalValue} style={{ color: "#059669" }}>USD {totalUsd.toLocaleString("es-AR", { minimumFractionDigits: 2 })}</span>
-              </div>
-            )}
-            <div className={styles.onlineBudgets__totalBoxConsolidado}>
-              <span className={styles.onlineBudgets__totalLabel} style={{ color: "rgba(255,255,255,0.8)" }}>TOTAL CONSOLIDADO</span>
-              {hayUSD && <span className={styles.onlineBudgets__totalSubtext}>(ARS + USD x ${usdRate.toLocaleString("es-AR")})</span>}
-              <span className={styles.onlineBudgets__totalValue} style={{ fontSize: 22 }}>$ {totalConsolidado.toLocaleString("es-AR", { minimumFractionDigits: 2 })}</span>
-            </div>
-          </div>
-        </fieldset>
-
-        {/* Actions */}
-        <div className={styles.onlineBudgets__actions}>
-          <button type="button" className={styles["onlineBudgets__actionBtn--whatsapp"]} onClick={handleWhatsAppExport} disabled={dataLoading}>
-            Exportar para WhatsApp
-          </button>
-          {isEdit && (
-            <button type="button" className={styles["onlineBudgets__actionBtn--convert"]} onClick={handleConvertToWorkOrder} disabled={dataLoading}>
-              CONVERTIR A OT
-            </button>
-          )}
-          <div style={{ flex: 1 }} />
-          <FormActions loading={saving || dataLoading} submitLabel="Guardar" onCancel={() => navigate("/admin/online-budgets")} />
-        </div>
+        <ObFormTotals
+          totalArs={totalArs} totalUsd={totalUsd} totalConsolidado={totalConsolidado}
+          usdRate={usdRate} hayUSD={hayUSD}
+          isEdit={isEdit} dataLoading={dataLoading} saving={saving}
+          onWhatsAppExport={handleWhatsAppExport}
+          onConvertToWorkOrder={handleConvertToWorkOrder}
+        />
       </form>
     </div>
   );

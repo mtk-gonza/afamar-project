@@ -21,13 +21,15 @@ let nextId = 0;
 export function NotificationProvider({ children }: { children: React.ReactNode }) {
   const [toasts, setToasts] = useState<Toast[]>([]);
 
+  const dismiss = useCallback((id: number) => {
+    setToasts((prev) => prev.filter((t) => t.id !== id));
+  }, []);
+
   const notify = useCallback((message: string, type: ToastType = "info") => {
     const id = nextId++;
     setToasts((prev) => [...prev, { id, message, type }]);
-    setTimeout(() => {
-      setToasts((prev) => prev.filter((t) => t.id !== id));
-    }, 4000);
-  }, []);
+    setTimeout(() => dismiss(id), 4000);
+  }, [dismiss]);
 
   const typeClass = (t: ToastType) => {
     if (t === "success") return styles["toast--success"];
@@ -40,7 +42,14 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
       {children}
       <div className={styles.container}>
         {toasts.map((t) => (
-          <div key={t.id} className={`${styles.toast} ${typeClass(t.type)}`}>
+          <div
+            key={t.id}
+            className={`${styles.toast} ${typeClass(t.type)}`}
+            onClick={() => dismiss(t.id)}
+            role="button"
+            tabIndex={0}
+            onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") dismiss(t.id); }}
+          >
             {t.message}
           </div>
         ))}

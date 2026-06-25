@@ -13,6 +13,7 @@ import { reportsApi } from "./reports";
 import { referencesApi } from "./references";
 import { searchApi } from "./search";
 import { whatsappApi } from "./whatsapp";
+import { productPhotosApi } from "./productPhotos";
 
 export const api = {
   // Auth
@@ -120,6 +121,14 @@ export const api = {
   updateCashPreviousBalance: cashApi.updatePreviousBalance,
   closeDailyCash: cashApi.closeDailyCash,
   getCashHistory: cashApi.getHistory,
+
+  // Product Photos
+  getProductPhotos: productPhotosApi.list,
+  getLatestProductPhotos: productPhotosApi.latest,
+  getProductPhoto: productPhotosApi.get,
+  createProductPhoto: productPhotosApi.create,
+  updateProductPhoto: productPhotosApi.update,
+  deleteProductPhoto: productPhotosApi.delete,
 
   // Reports
   getDashboard: reportsApi.dashboard,

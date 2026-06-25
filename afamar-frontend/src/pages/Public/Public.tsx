@@ -2,23 +2,12 @@ import { useEffect, useState } from "react";
 import styles from "./Public.module.css";
 import { Container } from "../../components/ui/Container";
 import { Modal } from "../../components/ui/Modal";
+import http from "../../api/http";
+import type { ProductPhoto } from "../../types";
 
 import slider1 from "../../assets/slider/1.jpg";
 import slider2 from "../../assets/slider/2.jpg";
 import slider3 from "../../assets/slider/3.jpg";
-
-import portfolio1 from "../../assets/portfolio/portfolio-details-1.jpg";
-import portfolio2 from "../../assets/portfolio/portfolio-details-2.jpg";
-import portfolio3 from "../../assets/portfolio/portfolio-details-3.jpg";
-import portfolio4 from "../../assets/portfolio/portfolio-details-4.jpg";
-import portfolio5 from "../../assets/portfolio/portfolio-details-5.jpg";
-import portfolio6 from "../../assets/portfolio/portfolio-details-6.jpg";
-import portfolio7 from "../../assets/portfolio/portfolio-details-7.jpg";
-import portfolio8 from "../../assets/portfolio/portfolio-details-8.jpg";
-import portfolio9 from "../../assets/portfolio/portfolio-details-9.jpg";
-import portfolio10 from "../../assets/portfolio/portfolio-details-10.jpg";
-import portfolio11 from "../../assets/portfolio/portfolio-details-11.jpg";
-import portfolio12 from "../../assets/portfolio/portfolio-details-12.jpg";
 
 const slides = [
   {
@@ -61,24 +50,25 @@ const materials = [
   },
 ];
 
-const portfolioItems = [
-  { image: portfolio1 },
-  { image: portfolio2 },
-  { image: portfolio3 },
-  { image: portfolio4 },
-  { image: portfolio5 },
-  { image: portfolio6 },
-  { image: portfolio7 },
-  { image: portfolio8 },
-  { image: portfolio9 },
-  { image: portfolio10 },
-  { image: portfolio11 },
-  { image: portfolio12 },
+const fallbackPortfolio = [
+  { image: "/assets/portfolio/portfolio-details-1.jpg" },
 ];
 
 export function Public() {
   const [activeSlide, setActiveSlide] = useState(0);
   const [modalImg, setModalImg] = useState<string | null>(null);
+  const [portfolioItems, setPortfolioItems] = useState<{ image: string }[]>(fallbackPortfolio);
+  const [portfolioLoading, setPortfolioLoading] = useState(true);
+
+  useEffect(() => {
+    setPortfolioLoading(true);
+    http.get("/product-photos/latest?limit=12").then((res) => {
+      const photos: ProductPhoto[] = res.data?.data || res.data || [];
+      if (photos.length > 0) {
+        setPortfolioItems(photos.map((p) => ({ image: p.file_path })));
+      }
+    }).catch(() => {}).finally(() => setPortfolioLoading(false));
+  }, []);
 
   const goTo = (i: number) => {
     setActiveSlide(i);
@@ -219,6 +209,9 @@ export function Public() {
         <Container>
         <h2 className={styles.section__title}>Nuestros Productos</h2>
         <p className={styles.section__subtitle}>Algunos de nuestros trabajos realizados</p>
+        {portfolioLoading ? (
+          <div className={styles.portfolio__loading}>Cargando fotos...</div>
+        ) : (
         <div className={styles.portfolio__grid}>
           {portfolioItems.map((item, i) => (
             <div
@@ -234,6 +227,7 @@ export function Public() {
             </div>
           ))}
         </div>
+        )}
 
         <Modal open={!!modalImg} onClose={() => setModalImg(null)} maxWidth="900px">
           <img src={modalImg ?? ""} alt="Producto" style={{ width: "100%", height: "auto", display: "block", borderRadius: "12px" }} />

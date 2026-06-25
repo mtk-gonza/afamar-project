@@ -1,21 +1,34 @@
 import logging
 import sys
+import time
 
+from app.core.config import settings
 
 def setup_logging() -> None:
-    formatter = logging.Formatter(
-        fmt="%(asctime)s | %(levelname)-7s | %(name)s | %(message)s",
+    level = getattr(logging, settings.LOG_LEVEL.upper(), logging.INFO)
+    logging.basicConfig(
+        level=level,
+        format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
         datefmt="%Y-%m-%d %H:%M:%S",
+        stream=sys.stdout,
     )
 
-    handler = logging.StreamHandler(sys.stdout)
-    handler.setFormatter(formatter)
+    if settings.DB_ECHO:
+        logging.getLogger("sqlalchemy.engine").setLevel(logging.INFO)
 
-    root = logging.getLogger()
-    root.setLevel(logging.INFO)
-    root.handlers.clear()
-    root.addHandler(handler)
+    logger = logging.getLogger("app")
+    logger.info("Logging configured — level=%s, format=%s", settings.LOG_LEVEL, settings.LOG_FORMAT)
 
-    # Quiet noisy libs
-    logging.getLogger("sqlalchemy.engine").setLevel(logging.WARNING)
-    logging.getLogger("httpx").setLevel(logging.WARNING)
+def check_database() -> tuple[bool, str]:
+    from sqlalchemy import text
+    from app.core.database import engine
+
+    start = time.time()
+    try:
+        with engine.connect() as conn:
+            conn.execute(text("SELECT 1"))
+        elapsed = time.time() - start
+        return True, f"connected ({elapsed:.3f}s)"
+    except Exception as e:
+        elapsed = time.time() - start
+        return False, f"failed ({elapsed:.3f}s): {e}"

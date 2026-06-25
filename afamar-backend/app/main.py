@@ -1,18 +1,20 @@
 import logging
 import time
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 from alembic import command
 from alembic.config import Config as AlembicConfig
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app.api.v1.router import router as api_router
 from app.core.config import settings
 from app.core.database import Base, engine, sync_schema
-from app.core.logging import setup_logging
+from app.core.logging import setup_logging, check_database
 from app.core.responses import error
 from app.models import *  # noqa: F401, F403
 from app.utils.seed import seed_default_data
@@ -35,6 +37,24 @@ def run_migrations():
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    logger.info("=" * 60)
+    logger.info("Starting %s v%s", settings.APP_NAME, settings.APP_VERSION)
+    logger.info("Environment: %s", settings.ENVIRONMENT)
+    logger.info("Database: %s", settings.DATABASE_URL_SAFE)
+    logger.info("Frontend URL: %s", settings.FRONTEND_URL)
+    logger.info("-" * 60)
+    
+    ok, msg = check_database()
+    if ok:
+        logger.info("Database check: %s", msg)
+        try:
+            logger.info("Database initialized")
+        except Exception as e:
+            logger.exception("Database initialization failed: %s", e)
+            raise
+    else:
+        logger.error("Database check: %s", msg)
+        raise RuntimeError(msg)
     Base.metadata.create_all(bind=engine)
     sync_schema()
     alembic_cfg = AlembicConfig("alembic.ini")
@@ -46,15 +66,19 @@ async def lifespan(app: FastAPI):
     yield
 
 
-app = FastAPI(title=settings.app_name, version=settings.app_version, lifespan=lifespan)
+app = FastAPI(title=settings.APP_NAME, version=settings.APP_VERSION, lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.origins,
+    allow_origins=settings.CORS_ALLOW_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+uploads_dir = Path(__file__).resolve().parent.parent / "uploads"
+uploads_dir.mkdir(exist_ok=True)
+app.mount("/uploads", StaticFiles(directory=str(uploads_dir)), name="uploads")
 
 app.include_router(api_router)
 
@@ -86,4 +110,4 @@ async def unhandled_exception_handler(_request: Request, exc: Exception):
 
 @app.get("/health")
 def health():
-    return {"status": "ok", "version": settings.app_version}
+    return {"status": "ok", "version": settings.APP_VERSION}

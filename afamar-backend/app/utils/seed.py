@@ -1,9 +1,13 @@
 import logging
+import shutil
+from pathlib import Path
+from uuid import uuid4
 
 from app.core.database import SessionLocal
 from app.models.material import Material, MaterialCategory, MaterialColor, MaterialThickness
 from app.models.options import AppOption
 from app.models.price_history import PriceHistory
+from app.models.product_photo import ProductPhoto
 from app.models.setting import Setting
 from app.models.user import User
 from app.services.auth import hash_password
@@ -81,6 +85,8 @@ def seed_default_data():
             }.items():
                 db.add(Setting(key=k, value=v))
 
+        _seed_product_photos(db)
+
         db.commit()
         logger.info("Seed data completed successfully")
     except Exception:
@@ -88,3 +94,53 @@ def seed_default_data():
         logger.exception("Seed data failed — all changes rolled back")
     finally:
         db.close()
+
+
+def _seed_product_photos(db):
+    if db.query(ProductPhoto).first():
+        return
+    frontend_portfolio = (
+        Path(__file__).resolve().parent.parent.parent.parent
+        / "afamar-frontend"
+        / "src"
+        / "assets"
+        / "portfolio"
+    )
+    upload_dir = (
+        Path(__file__).resolve().parent.parent.parent
+        / "uploads"
+        / "product_photos"
+    )
+    if not frontend_portfolio.exists():
+        logger.warning("Frontend portfolio dir not found: %s — skipping product photo seed", frontend_portfolio)
+        return
+
+    upload_dir.mkdir(parents=True, exist_ok=True)
+
+    titles = [
+        "Mesada de cocina",
+        "Mesada de baño",
+        "Cubierta de granito",
+        "Revestimiento de pared",
+        "Mesada con bacha integrada",
+        "Detalle de terminación",
+        "Cocina completa",
+        "Baño completo",
+        "Mesada de cuarzo",
+        "Detalle de junta",
+        "Revestimiento exterior",
+        "Trabajo especial",
+    ]
+
+    for i, src_path in enumerate(sorted(frontend_portfolio.glob("*.jpg")), start=0):
+        idx = i % len(titles)
+        ext = src_path.suffix
+        stored_name = f"{uuid4().hex}{ext}"
+        dest_path = upload_dir / stored_name
+        shutil.copy2(str(src_path), str(dest_path))
+        photo = ProductPhoto(
+            file_path=f"/uploads/product_photos/{stored_name}",
+            title=titles[idx],
+            description="",
+        )
+        db.add(photo)

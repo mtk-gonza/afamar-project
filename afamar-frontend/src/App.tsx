@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { lazy } from "react";
 import { Layout } from "./components/Layout/Layout";
 import { ProtectedRoute } from "./components/ProtectedRoute/ProtectedRoute";
+import { ReferencesProvider } from "./context/ReferencesContext";
 
 const Dashboard = lazy(() => import("./pages/Dashboard/Dashboard").then((m) => ({ default: m.Dashboard })));
 const Budgets = lazy(() => import("./pages/Budgets/Budgets").then((m) => ({ default: m.Budgets })));
@@ -23,12 +24,14 @@ const OnlineBudgetForm = lazy(() => import("./pages/OnlineBudgets/OnlineBudgetFo
 const Calculator = lazy(() => import("./pages/Calculator/Calculator").then((m) => ({ default: m.Calculator })));
 const DailyCashPage = lazy(() => import("./pages/DailyCash/DailyCashPage").then((m) => ({ default: m.DailyCashPage })));
 const CashHistory = lazy(() => import("./pages/DailyCash/CashHistory").then((m) => ({ default: m.CashHistory })));
+const ProductPhotos = lazy(() => import("./pages/ProductPhotos/ProductPhotos").then((m) => ({ default: m.ProductPhotos })));
 const Login = lazy(() => import("./pages/Login/Login").then((m) => ({ default: m.Login })));
 const Public = lazy(() => import("./pages/Public/Public").then((m) => ({ default: m.Public })));
 
 export default function App() {
   return (
     <BrowserRouter>
+      <ReferencesProvider>
       <Routes>
         <Route index element={<Public />} />
         <Route path="login" element={<Login />} />
@@ -60,9 +63,11 @@ export default function App() {
             <Route path="calculator" element={<Calculator />} />
             <Route path="cash" element={<DailyCashPage />} />
             <Route path="cash/history" element={<CashHistory />} />
+            <Route path="product-photos" element={<ProductPhotos />} />
           </Route>
         </Route>
       </Routes>
+      </ReferencesProvider>
     </BrowserRouter>
   );
 }

@@ -1,42 +1,88 @@
-from pydantic_settings import BaseSettings
+from pathlib import Path
+from pydantic_settings import BaseSettings, SettingsConfigDict
+
+BASE_DIR = Path(__file__).resolve().parent.parent.parent.parent
 
 
 class Settings(BaseSettings):
-    # App
-    app_name: str = "AFAMAR API"
-    app_version: str = "1.0.0"
-    debug: bool = True
+    model_config = SettingsConfigDict(
+        env_file=str(BASE_DIR / ".env"),
+        env_file_encoding="utf-8",
+        extra="ignore",
+    )
+
+    # Application
+    ENVIRONMENT: str = "production"
+    APP_NAME: str = "AFAMAR API"
+    APP_VERSION: str = "1.1.0"
+    APP_DESCRIPTION: str = "API de gestión de documentos"
+    DEBUG: bool = False
 
     # Database
-    database_url: str = "sqlite:///./afamar.db"
-
-    # CORS
-    cors_origins: str = "http://localhost:3090"
-
-    # PDF
-    pdf_output_dir: str = "./pdfs"
+    DB_USER: str = "afamar-project"
+    DB_PASSWORD: str = ""
+    DB_HOST: str = "mysql-central"
+    DB_PORT: str = "3306"
+    DB_NAME: str = "afamar-project"
+    DB_POOL_SIZE: int = 10
+    DB_MAX_OVERFLOW: int = 20
+    DB_ECHO: bool = False
 
     # SMTP
-    smtp_host: str = ""
-    smtp_port: int = 587
-    smtp_user: str = ""
-    smtp_password: str = ""
-    smtp_from: str = ""
+    SMTP_HOST: str = ""
+    SMTP_PORT: int = 587
+    SMTP_USER: str = ""
+    SMTP_PASSWORD: str = ""
+    SMTP_FROM: str = ""
 
     # WhatsApp
-    whatsapp_api_url: str = ""
-    whatsapp_api_key: str = ""
+    WHATSAPP_API_URL: str = ""
+    WHATSAPP_API_KEY: str = ""
 
     # JWT
-    jwt_secret_key: str = "afamar-secret-key-change-in-production"
-    jwt_algorithm: str = "HS256"
-    jwt_expire_minutes: int = 1440  # 24 hours
+    SECRET_KEY: str = "afamar-secret-key-change-in-production"
+    ALGORITHM: str = "HS256"
+    ACCESS_TOKEN_EXPIRE_HOURS: int = 8
+    CORS_ALLOW_ORIGINS: str = "*"
+
+    # Frontend
+    FRONTEND_URL: str = "http://localhost:3090"
+
+    # Logging
+    LOG_LEVEL: str = "INFO"
+    LOG_FORMAT: str = "text"
 
     @property
-    def origins(self) -> list[str]:
-        return [o.strip() for o in self.cors_origins.split(",") if o.strip()]
+    def cors_origins_list(self) -> list[str]:
+        if self.CORS_ALLOW_ORIGINS == "*":
+            return ["*"]
+        return [origin.strip() for origin in self.CORS_ALLOW_ORIGINS.split(",")]
 
-    model_config = {"env_file": ".env", "extra": "allow", "env_file_encoding": "utf-8"}
+    @property
+    def DATABASE_URL(self) -> str:
+        if self.ENVIRONMENT == "development":
+            return "sqlite:///afamar.db"
+        return (
+            f"mysql+pymysql://{self.DB_USER}:{self.DB_PASSWORD}"
+            f"@{self.DB_HOST}:{self.DB_PORT}/{self.DB_NAME}"
+        )
+
+    @property
+    def DATABASE_URL_SAFE(self) -> str:
+        if self.ENVIRONMENT == "development":
+            return "sqlite:///afamar.db"
+        return (
+            f"mysql+pymysql://{self.DB_USER}:******"
+            f"@{self.DB_HOST}:{self.DB_PORT}/{self.DB_NAME}"
+        )
+
+    @property
+    def is_production(self) -> bool:
+        return self.ENVIRONMENT == "production"
+
+    @property
+    def is_development(self) -> bool:
+        return self.ENVIRONMENT == "development"
 
 
 settings = Settings()

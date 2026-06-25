@@ -381,3 +381,21 @@ export interface AuthResponse {
   token_type: string;
   user: User;
 }
+
+export interface ReferenceItem {
+  id: number;
+  name: string;
+  label: string;
+  color: string | null;
+  is_active: boolean;
+  sort_order: number;
+}
+
+export interface ProductPhoto {
+  id: number;
+  file_path: string;
+  title: string | null;
+  description: string | null;
+  created_at: string;
+  updated_at: string;
+}

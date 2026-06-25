@@ -2,13 +2,19 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { api } from "../../api/client";
 import { useNotify } from "../../context/NotificationContext";
+import { useReferences } from "../../context/ReferencesContext";
 import { ErrorBlock } from "../../components/ui/ErrorBlock";
 import { FormActions } from "../../components/ui/FormActions";
 import type { Budget, Client, Material, MaterialColor, MaterialThickness, AppOption, PoolStock } from "../../types";
+import type { ItemRow } from "./BudgetFormItems";
+import type { AdicionalRow } from "./BudgetFormAdicionales";
+import { BudgetFormClient } from "./BudgetFormClient";
+import { BudgetFormSpecs } from "./BudgetFormSpecs";
+import { BudgetFormItems } from "./BudgetFormItems";
+import { BudgetFormAdicionales } from "./BudgetFormAdicionales";
+import { BudgetFormFinancial } from "./BudgetFormFinancial";
+import { BudgetFormObservations } from "./BudgetFormObservations";
 import styles from "./BudgetForm.module.css";
-
-interface ItemRow { _key: number; sector: string; description: string; quantity: number; unit_price: number; total: number; length: number; width: number; m2: number; price_m2: number }
-interface AdicionalRow { _key: number; concept: string; detail: string; quantity: number; unit_price: number; total: number }
 
 let _nextKey = 1;
 const key = () => _nextKey++;
@@ -20,7 +26,9 @@ export function BudgetForm() {
   const navigate = useNavigate();
   const notify = useNotify();
   const isEdit = Boolean(id);
+  const { paymentMethods } = useReferences();
   const mounted = useRef(true);
+
   const [clients, setClients] = useState<Client[]>([]);
   const [materials, setMaterials] = useState<Material[]>([]);
   const [colors, setColors] = useState<MaterialColor[]>([]);
@@ -82,6 +90,16 @@ export function BudgetForm() {
         }
         return next;
       });
+    }
+  };
+
+  const handleClientChange = (id: number, c: Client | undefined) => {
+    setClientId(id);
+    if (c) {
+      setClientName(c.name);
+      setClientPhone(c.phone || "");
+      setClientEmail(c.email || "");
+      setClientAddress(c.address || "");
     }
   };
 
@@ -168,7 +186,6 @@ export function BudgetForm() {
   };
 
   const addItem = () => setItems([...items, emptyItem()]);
-  const removeItem = (idx: number) => items.length > 1 && setItems(items.filter((_, i) => i !== idx));
 
   const updateAdicional = (idx: number, field: keyof Omit<AdicionalRow, "_key">, value: string | number) => {
     setAdicionales((prev) => {
@@ -266,306 +283,76 @@ export function BudgetForm() {
       <h2 className={styles.budgetForm__title}>{isEdit ? "Editar Presupuesto" : "Nuevo Presupuesto"}</h2>
       {!isEdit && nextNumber && <span className={styles.budgetForm__nextNumber}>Próximo número: {nextNumber}</span>}
       <form className={styles.budgetForm__form} onSubmit={handleSubmit}>
-        {/* Cliente */}
-        <fieldset className={styles.budgetForm__fieldset}>
-          <legend>Cliente</legend>
-          <select className={styles.budgetForm__input} value={clientId} onChange={(e) => { setClientId(Number(e.target.value)); if (Number(e.target.value) > 0) { const c = clients.find((cl) => cl.id === Number(e.target.value)); if (c) { setClientName(c.name); setClientPhone(c.phone || ""); setClientEmail(c.email || ""); setClientAddress(c.address || ""); } } }} disabled={dataLoading}>
-            <option value={0}>{dataLoading ? "Cargando clientes..." : "Seleccionar cliente..."}</option>
-            {clients.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-          </select>
-          <div className={styles.budgetForm__grid2} style={{ marginTop: "0.5rem" }}>
-            <label className={styles.budgetForm__label}>Nombre
-              <input className={styles.budgetForm__input} value={clientName} onChange={(e) => setClientName(e.target.value)} placeholder={clientId > 0 ? "Usando cliente existente" : "Nombre del cliente"} />
-            </label>
-            <label className={styles.budgetForm__label}>Teléfono
-              <input className={styles.budgetForm__input} value={clientPhone} onChange={(e) => setClientPhone(e.target.value)} />
-            </label>
-            <label className={styles.budgetForm__label}>Email
-              <input className={styles.budgetForm__input} value={clientEmail} onChange={(e) => setClientEmail(e.target.value)} />
-            </label>
-            <label className={styles.budgetForm__label}>Dirección
-              <input className={styles.budgetForm__input} value={clientAddress} onChange={(e) => setClientAddress(e.target.value)} />
-            </label>
-          </div>
-        </fieldset>
+        <BudgetFormClient
+          clientId={clientId} clientName={clientName} clientPhone={clientPhone}
+          clientEmail={clientEmail} clientAddress={clientAddress}
+          clients={clients} dataLoading={dataLoading}
+          onClientChange={handleClientChange}
+          onNameChange={setClientName} onPhoneChange={setClientPhone}
+          onEmailChange={setClientEmail} onAddressChange={setClientAddress}
+        />
 
-        {/* Especificaciones */}
-        <fieldset className={styles.budgetForm__fieldset}>
-          <legend>Especificaciones</legend>
-          <div className={styles.budgetForm__grid2}>
-            <label className={styles.budgetForm__label}>Material
-              <select className={styles.budgetForm__input} value={specs.material} onChange={(e) => handleMaterialChange(e.target.value)} disabled={dataLoading}>
-                <option value="">{dataLoading ? "Cargando..." : "Seleccionar..."}</option>
-                {materials.map((m) => <option key={m.id} value={m.name}>{m.name}</option>)}
-              </select>
-            </label>
-            <label className={styles.budgetForm__label}>Color
-              <select className={styles.budgetForm__input} value={specs.color} onChange={(e) => setSpecs({ ...specs, color: e.target.value })} disabled={dataLoading}>
-                <option value="">{dataLoading ? "Cargando..." : "Seleccionar..."}</option>
-                {colors.map((c) => <option key={c.id} value={c.name}>{c.name}</option>)}
-              </select>
-            </label>
-            <label className={styles.budgetForm__label}>Espesor
-              <select className={styles.budgetForm__input} value={specs.thickness} onChange={(e) => setSpecs({ ...specs, thickness: e.target.value })} disabled={dataLoading}>
-                <option value="">{dataLoading ? "Cargando..." : "Seleccionar..."}</option>
-                {thicknesses.map((t) => <option key={t.id} value={t.name}>{t.name}</option>)}
-              </select>
-            </label>
-            <label className={styles.budgetForm__label}>Frente
-              <select className={styles.budgetForm__input} value={specs.front} onChange={(e) => setSpecs({ ...specs, front: e.target.value })} disabled={dataLoading}>
-                <option value="">{dataLoading ? "Cargando..." : "Seleccionar..."}</option>
-                {frontTypes.map((o) => <option key={o.id} value={o.value}>{o.value}</option>)}
-              </select>
-            </label>
-            <label className={styles.budgetForm__label}>Terminación
-              <select className={styles.budgetForm__input} value={specs.finish} onChange={(e) => setSpecs({ ...specs, finish: e.target.value })} disabled={dataLoading}>
-                <option value="">{dataLoading ? "Cargando..." : "Seleccionar..."}</option>
-                {finishTypes.map((o) => <option key={o.id} value={o.value}>{o.value}</option>)}
-              </select>
-            </label>
-            <label className={styles.budgetForm__label}>Bacha
-              <select className={styles.budgetForm__input} value={specs.bacha} onChange={(e) => setSpecs({ ...specs, bacha: e.target.value })} disabled={dataLoading}>
-                <option value="">{dataLoading ? "Cargando..." : "Seleccionar..."}</option>
-                {bachaTypes.map((o) => <option key={o.id} value={o.value}>{o.value}</option>)}
-              </select>
-            </label>
-            <label className={styles.budgetForm__label}>Anafe
-              <select className={styles.budgetForm__input} value={specs.anafe} onChange={(e) => setSpecs({ ...specs, anafe: e.target.value })} disabled={dataLoading}>
-                <option value="">{dataLoading ? "Cargando..." : "Seleccionar..."}</option>
-                {anafeTypes.map((o) => <option key={o.id} value={o.value}>{o.value}</option>)}
-              </select>
-            </label>
-            <label className={styles.budgetForm__label}>Perforaciones
-              <input className={styles.budgetForm__input} value={specs.perforations} onChange={(e) => setSpecs({ ...specs, perforations: e.target.value })} />
-            </label>
-          </div>
-        </fieldset>
+        <BudgetFormSpecs
+          {...specs}
+          materials={materials} colors={colors} thicknesses={thicknesses}
+          frontTypes={frontTypes} finishTypes={finishTypes}
+          bachaTypes={bachaTypes} anafeTypes={anafeTypes}
+          dataLoading={dataLoading}
+          onMaterialChange={handleMaterialChange}
+          onChange={(field, v) => setSpecs({ ...specs, [field]: v })}
+        />
 
-        {/* Items */}
-        <fieldset className={styles.budgetForm__fieldset}>
-          <legend>Items</legend>
-          <div className={styles.budgetForm__itemsHeader}>
-            <span>Descripción</span><span>Largo</span><span>Ancho</span><span>M²</span><span>Cant.</span><span>$ / M²</span><span>P. Unit</span><span>Total</span><span></span>
-          </div>
-          {items.map((item, i) => (
-            <div key={item._key} className={styles.budgetForm__itemRow}>
-              <input className={styles.budgetForm__input} value={item.description} onChange={(e) => updateItem(i, "description", e.target.value)} placeholder="Descripción" />
-              <input className={styles.budgetForm__input} type="number" value={item.length || ""} onChange={(e) => updateItem(i, "length", Number(e.target.value))} />
-              <input className={styles.budgetForm__input} type="number" value={item.width || ""} onChange={(e) => updateItem(i, "width", Number(e.target.value))} />
-              <span className={styles.budgetForm__itemTotal}>{item.m2.toFixed(4)}</span>
-              <input className={styles.budgetForm__input} type="number" value={item.quantity} onChange={(e) => updateItem(i, "quantity", Number(e.target.value))} />
-              <input className={styles.budgetForm__input} type="number" value={item.price_m2 || ""} onChange={(e) => updateItem(i, "price_m2", Number(e.target.value))} />
-              <input className={styles.budgetForm__input} type="number" value={item.unit_price} onChange={(e) => updateItem(i, "unit_price", Number(e.target.value))} />
-              <span className={styles.budgetForm__itemTotal}>$ {item.total.toFixed(2)}</span>
-              <button type="button" className={styles.budgetForm__removeItem} onClick={() => removeItem(i)}>✕</button>
-            </div>
-          ))}
-          <button type="button" className={styles.budgetForm__addItem} onClick={addItem}>+ Agregar item</button>
-        </fieldset>
+        <BudgetFormItems
+          items={items} fabTab={fabTab}
+          onUpdate={updateItem} onAdd={addItem}
+          onRemove={(key: number) => setItems(items.filter((i) => i._key !== key))}
+          onFabTabChange={setFabTab}
+          onSetItems={setItems}
+          emptyItemFn={(sector) => emptyItem(sector)}
+        />
 
-        {/* Detalles de Fabricación */}
-        <fieldset className={styles.budgetForm__fieldset}>
-          <legend>Detalles de Fabricación</legend>
-          <div className={styles.budgetForm__fabTabs}>
-            {["ZÓCALO", "FRENTE", "TRAFOROS", "OTRA"].map((tab) => (
-              <button key={tab} type="button" className={`${styles.budgetForm__fabTab} ${fabTab === tab ? styles["budgetForm__fabTab--active"] : ""}`} onClick={() => setFabTab(tab)}>
-                {tab}
-              </button>
-            ))}
-          </div>
-          {fabTab !== "OTRA" ? (
-            <div>
-              <div className={styles.budgetForm__itemsHeader}>
-                <span>Descripción</span><span>Largo</span><span>Ancho</span><span>M²</span><span>Cant.</span><span>$ / M²</span><span>P. Unit</span><span>Total</span><span></span>
-              </div>
-              {items.filter((i) => i.sector === fabTab).map((item) => {
-                const idx = items.findIndex((i) => i._key === item._key);
-                return (
-                  <div key={item._key} className={styles.budgetForm__itemRow}>
-                    <input className={styles.budgetForm__input} value={item.description} onChange={(e) => updateItem(idx, "description", e.target.value)} placeholder="Descripción" />
-                    <input className={styles.budgetForm__input} type="number" value={item.length || ""} onChange={(e) => updateItem(idx, "length", Number(e.target.value))} />
-                    <input className={styles.budgetForm__input} type="number" value={item.width || ""} onChange={(e) => updateItem(idx, "width", Number(e.target.value))} />
-                    <span className={styles.budgetForm__itemTotal}>{item.m2.toFixed(4)}</span>
-                    <input className={styles.budgetForm__input} type="number" value={item.quantity} onChange={(e) => updateItem(idx, "quantity", Number(e.target.value))} />
-                    <input className={styles.budgetForm__input} type="number" value={item.price_m2 || ""} onChange={(e) => updateItem(idx, "price_m2", Number(e.target.value))} />
-                    <input className={styles.budgetForm__input} type="number" value={item.unit_price} onChange={(e) => updateItem(idx, "unit_price", Number(e.target.value))} />
-                    <span className={styles.budgetForm__itemTotal}>$ {item.total.toFixed(2)}</span>
-                    <button type="button" className={styles.budgetForm__removeItem} onClick={() => setItems(items.filter((i) => i._key !== item._key))}>✕</button>
-                  </div>
-                );
-              })}
-              <button type="button" className={styles.budgetForm__addItem} onClick={() => setItems([...items, emptyItem(fabTab)])}>+ Agregar {fabTab.toLowerCase()}</button>
-            </div>
-          ) : (
-            <div>
-              {items.filter((i) => i.sector === "OTRA").map((item) => {
-                const idx = items.findIndex((i) => i._key === item._key);
-                return (
-                  <div key={item._key} className={styles.budgetForm__itemRow}>
-                    <input className={styles.budgetForm__input} value={item.description} onChange={(e) => updateItem(idx, "description", e.target.value)} placeholder="Descripción" />
-                    <input className={styles.budgetForm__input} type="number" value={item.unit_price} onChange={(e) => updateItem(idx, "unit_price", Number(e.target.value))} placeholder="P. Unit" />
-                    <span className={styles.budgetForm__itemTotal}>$ {item.total.toFixed(2)}</span>
-                    <button type="button" className={styles.budgetForm__removeItem} onClick={() => setItems(items.filter((i) => i._key !== item._key))}>✕</button>
-                  </div>
-                );
-              })}
-              <button type="button" className={styles.budgetForm__addItem} onClick={() => setItems([...items, { ...emptyItem("OTRA"), quantity: 1, unit_price: 0 }])}>+ Agregar otra</button>
-            </div>
-          )}
-        </fieldset>
+        <BudgetFormAdicionales
+          adicionales={adicionales}
+          onUpdate={updateAdicional} onAdd={addAdicional} onRemove={removeAdicional}
+        />
 
-        {/* Adicionales */}
-        <fieldset className={styles.budgetForm__fieldset}>
-          <legend>Adicionales</legend>
-          <div className={styles.budgetForm__adicionalesHeader}>
-            <span>Concepto</span><span>Detalle</span><span>Cant.</span><span>P. Unit</span><span>Total</span><span></span>
-          </div>
-          {adicionales.map((a, i) => (
-            <div key={a._key} className={styles.budgetForm__adicionalRow}>
-              <input className={styles.budgetForm__input} value={a.concept} onChange={(e) => updateAdicional(i, "concept", e.target.value)} placeholder="Concepto" />
-              <input className={styles.budgetForm__input} value={a.detail} onChange={(e) => updateAdicional(i, "detail", e.target.value)} placeholder="Detalle" />
-              <input className={styles.budgetForm__input} type="number" value={a.quantity} onChange={(e) => updateAdicional(i, "quantity", Number(e.target.value))} />
-              <input className={styles.budgetForm__input} type="number" value={a.unit_price} onChange={(e) => updateAdicional(i, "unit_price", Number(e.target.value))} />
-              <span className={styles.budgetForm__itemTotal}>$ {a.total.toFixed(2)}</span>
-              <button type="button" className={styles.budgetForm__removeItem} onClick={() => removeAdicional(i)}>✕</button>
-            </div>
-          ))}
-          <button type="button" className={styles.budgetForm__addItem} onClick={addAdicional}>+ Agregar adicional</button>
-        </fieldset>
+        <BudgetFormFinancial
+          currency={currency} usdRate={usdRate} discountPct={discountPct}
+          discountType={discountType} transport={transport} installation={installation}
+          depositReceived={depositReceived} depositCurrency={depositCurrency}
+          installments={installments} cardSurchargePct={cardSurchargePct}
+          poolId={poolId} poolPrice={poolPrice} poolCurrency={poolCurrency}
+          paymentMethod={payment.payment_method} validityDays={payment.validity_days}
+          estimatedDelivery={payment.estimated_delivery} estimatedDate={payment.estimated_date}
+          poolStock={poolStock} paymentMethods={paymentMethods}
+          subtotalTotal={subtotalTotal} discountAmt={discountAmt}
+          cardSurcharge={cardSurcharge} totalArs={totalArs} totalUsd={totalUsd} balanceDue={balanceDue}
+          onCurrencyChange={setCurrency} onUsdRateChange={setUsdRate}
+          onDiscountPctChange={setDiscountPct} onDiscountTypeChange={setDiscountType}
+          onTransportChange={setTransport} onInstallationChange={setInstallation}
+          onDepositReceivedChange={setDepositReceived} onDepositCurrencyChange={setDepositCurrency}
+          onInstallmentsChange={setInstallments} onCardSurchargePctChange={setCardSurchargePct}
+          onPoolIdChange={handlePoolChange} onPoolPriceChange={setPoolPrice} onPoolCurrencyChange={setPoolCurrency}
+          onPaymentMethodChange={(v) => setPayment({ ...payment, payment_method: v })}
+          onValidityDaysChange={(v) => setPayment({ ...payment, validity_days: v })}
+          onEstimatedDeliveryChange={(v) => setPayment({ ...payment, estimated_delivery: v })}
+          onEstimatedDateChange={(v) => setPayment({ ...payment, estimated_date: v })}
+        />
 
-        {/* Pool / Pileta */}
-        <fieldset className={styles.budgetForm__fieldset}>
-          <legend>Pool / Pileta</legend>
-          <div className={styles.budgetForm__grid2}>
-            <label className={styles.budgetForm__label}>Pool
-              <select className={styles.budgetForm__input} value={poolId} onChange={(e) => handlePoolChange(Number(e.target.value))}>
-                <option value={0}>Sin pool</option>
-                {poolStock.map((p) => (
-                  <option key={p.id} value={p.id}>{p.brand} {p.model} (${p.price})</option>
-                ))}
-              </select>
-            </label>
-            <label className={styles.budgetForm__label}>Precio pool
-              <input className={styles.budgetForm__input} type="number" value={poolPrice} onChange={(e) => setPoolPrice(Number(e.target.value))} />
-            </label>
-            <label className={styles.budgetForm__label}>Moneda pool
-              <select className={styles.budgetForm__input} value={poolCurrency} onChange={(e) => setPoolCurrency(e.target.value)}>
-                <option value="ARS">ARS</option>
-                <option value="USD">USD</option>
-              </select>
-            </label>
-          </div>
-        </fieldset>
-
-        {/* Financiero */}
-        <fieldset className={styles.budgetForm__fieldset}>
-          <legend>Financiero</legend>
-          <div className={styles.budgetForm__grid2}>
-            <label className={styles.budgetForm__label}>Moneda
-              <select className={styles.budgetForm__input} value={currency} onChange={(e) => setCurrency(e.target.value)}>
-                <option value="ARS">ARS</option>
-                <option value="USD">USD</option>
-              </select>
-            </label>
-            <label className={styles.budgetForm__label}>Cotización USD
-              <input className={styles.budgetForm__input} type="number" value={usdRate} onChange={(e) => setUsdRate(Number(e.target.value))} />
-            </label>
-            <label className={styles.budgetForm__label}>Descuento
-              <input className={styles.budgetForm__input} type="number" value={discountPct} onChange={(e) => setDiscountPct(Number(e.target.value))} min="0" />
-            </label>
-            <label className={styles.budgetForm__label}>Tipo de Descuento
-              <select className={styles.budgetForm__input} value={discountType} onChange={(e) => setDiscountType(e.target.value)}>
-                <option value="porcentaje">Porcentaje (%)</option>
-                <option value="fijo">Fijo ($)</option>
-              </select>
-            </label>
-            <label className={styles.budgetForm__label}>Transporte
-              <input className={styles.budgetForm__input} type="number" value={transport} onChange={(e) => setTransport(Number(e.target.value))} />
-            </label>
-            <label className={styles.budgetForm__label}>Instalación
-              <input className={styles.budgetForm__input} type="number" value={installation} onChange={(e) => setInstallation(Number(e.target.value))} />
-            </label>
-            <label className={styles.budgetForm__label}>Seña recibida
-              <input className={styles.budgetForm__input} type="number" value={depositReceived} onChange={(e) => setDepositReceived(Number(e.target.value))} />
-            </label>
-            <label className={styles.budgetForm__label}>Moneda seña
-              <select className={styles.budgetForm__input} value={depositCurrency} onChange={(e) => setDepositCurrency(e.target.value)}>
-                <option value="ARS">ARS</option>
-                <option value="USD">USD</option>
-              </select>
-            </label>
-            <label className={styles.budgetForm__label}>Cuotas
-              <input className={styles.budgetForm__input} type="number" value={installments} onChange={(e) => setInstallments(Number(e.target.value))} min="1" />
-            </label>
-            <label className={styles.budgetForm__label}>Recargo por Tarjeta %
-              <input className={styles.budgetForm__input} type="number" value={cardSurchargePct} onChange={(e) => setCardSurchargePct(Number(e.target.value))} min="0" step="0.1" />
-            </label>
-          </div>
-          <div className={styles.budgetForm__totals}>
-            <span>Subtotal: $ {subtotalTotal.toFixed(2)}</span>
-            {discountAmt > 0 && <span>Desc.: -$ {discountAmt.toFixed(2)}</span>}
-            {cardSurcharge > 0 && <span>Recargo: +$ {cardSurcharge.toFixed(2)}</span>}
-            <span>Total: $ {totalArs.toFixed(2)}</span>
-            {currency === "ARS" && <span>USD: US$ {totalUsd.toFixed(2)}</span>}
-            <span>Saldo: $ {balanceDue.toFixed(2)}</span>
-          </div>
-        </fieldset>
-
-        {/* Comercial */}
-        <fieldset className={styles.budgetForm__fieldset}>
-          <legend>Información comercial</legend>
-          <div className={styles.budgetForm__grid2}>
-            <label className={styles.budgetForm__label}>Forma de pago
-              <select className={styles.budgetForm__input} value={payment.payment_method} onChange={(e) => setPayment({ ...payment, payment_method: e.target.value })}>
-                <option value="">Seleccionar...</option>
-                <option value="cash">Efectivo</option>
-                <option value="transfer">Transferencia Bancaria</option>
-                <option value="card">Tarjeta</option>
-              </select>
-            </label>
-            <label className={styles.budgetForm__label}>Validez (días)<input className={styles.budgetForm__input} type="number" value={payment.validity_days} onChange={(e) => setPayment({ ...payment, validity_days: Number(e.target.value) })} /></label>
-            <label className={styles.budgetForm__label}>Entrega aprox.<input className={styles.budgetForm__input} value={payment.estimated_delivery} onChange={(e) => setPayment({ ...payment, estimated_delivery: e.target.value })} /></label>
-            <label className={styles.budgetForm__label}>Fecha estimada<input className={styles.budgetForm__input} type="date" value={payment.estimated_date} onChange={(e) => setPayment({ ...payment, estimated_date: e.target.value })} /></label>
-          </div>
-        </fieldset>
-
-        {/* Observaciones */}
-        <fieldset className={styles.budgetForm__fieldset}>
-          <legend>Observaciones</legend>
-          <div className={styles.budgetForm__grid2}>
-            <label className={styles.budgetForm__label}>Diseño
-              <textarea className={styles.budgetForm__textarea} value={observations.design} onChange={(e) => setObservations({ ...observations, design: e.target.value })} />
-            </label>
-            <label className={styles.budgetForm__label}>Importantes
-              <textarea className={styles.budgetForm__textarea} value={observations.important} onChange={(e) => setObservations({ ...observations, important: e.target.value })} />
-            </label>
-            <label className={styles.budgetForm__label}>Fabricación
-              <textarea className={styles.budgetForm__textarea} value={observations.fabrication} onChange={(e) => setObservations({ ...observations, fabrication: e.target.value })} />
-            </label>
-            <label className={styles.budgetForm__label}>Generales
-              <textarea className={styles.budgetForm__textarea} value={observations.notes} onChange={(e) => setObservations({ ...observations, notes: e.target.value })} />
-            </label>
-          </div>
-        </fieldset>
-
-        {/* Snapshot cliente */}
-        <fieldset className={styles.budgetForm__fieldset}>
-          <legend>Datos del cliente (snapshot)</legend>
-          <div className={styles.budgetForm__grid2}>
-            <label className={styles.budgetForm__label}>Nombre
-              <input className={styles.budgetForm__input} value={snapshot.name} onChange={(e) => setSnapshot({ ...snapshot, name: e.target.value })} />
-            </label>
-            <label className={styles.budgetForm__label}>Teléfono
-              <input className={styles.budgetForm__input} value={snapshot.phone} onChange={(e) => setSnapshot({ ...snapshot, phone: e.target.value })} />
-            </label>
-            <label className={styles.budgetForm__label}>Email
-              <input className={styles.budgetForm__input} value={snapshot.email} onChange={(e) => setSnapshot({ ...snapshot, email: e.target.value })} />
-            </label>
-            <label className={styles.budgetForm__label}>Dirección
-              <input className={styles.budgetForm__input} value={snapshot.address} onChange={(e) => setSnapshot({ ...snapshot, address: e.target.value })} />
-            </label>
-          </div>
-        </fieldset>
+        <BudgetFormObservations
+          design={observations.design} important={observations.important}
+          fabrication={observations.fabrication} notes={observations.notes}
+          snapshotName={snapshot.name} snapshotPhone={snapshot.phone}
+          snapshotEmail={snapshot.email} snapshotAddress={snapshot.address}
+          onDesignChange={(v) => setObservations({ ...observations, design: v })}
+          onImportantChange={(v) => setObservations({ ...observations, important: v })}
+          onFabricationChange={(v) => setObservations({ ...observations, fabrication: v })}
+          onNotesChange={(v) => setObservations({ ...observations, notes: v })}
+          onSnapshotNameChange={(v) => setSnapshot({ ...snapshot, name: v })}
+          onSnapshotPhoneChange={(v) => setSnapshot({ ...snapshot, phone: v })}
+          onSnapshotEmailChange={(v) => setSnapshot({ ...snapshot, email: v })}
+          onSnapshotAddressChange={(v) => setSnapshot({ ...snapshot, address: v })}
+        />
 
         <FormActions loading={saving || dataLoading} />
       </form>

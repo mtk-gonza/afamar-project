@@ -9,7 +9,8 @@ from app.core.responses import created, success
 from app.models.reference import BudgetStatus, WorkOrderStatus, PaymentMethod, PriorityLevel, FinishType
 from app.schemas.reference import ReferenceCreate, ReferenceUpdate
 
-router = APIRouter(dependencies=[Depends(get_current_user)])
+router = APIRouter()
+auth_router = APIRouter(dependencies=[Depends(get_current_user)])
 
 MODEL_MAP = {
     "budget-statuses": BudgetStatus,
@@ -54,7 +55,7 @@ def get_reference(resource: str, item_id: int, db: Session = Depends(get_db)):
     return success(item)
 
 
-@router.post("/{resource}", status_code=201)
+@auth_router.post("/{resource}", status_code=201)
 def create_reference(resource: str, data: ReferenceCreate, db: Session = Depends(get_db)):
     model = _get_model(resource)
     item = model(**data.model_dump())
@@ -64,7 +65,7 @@ def create_reference(resource: str, data: ReferenceCreate, db: Session = Depends
     return created(item)
 
 
-@router.put("/{resource}/{item_id}")
+@auth_router.put("/{resource}/{item_id}")
 def update_reference(resource: str, item_id: int, data: ReferenceUpdate, db: Session = Depends(get_db)):
     model = _get_model(resource)
     item = db.query(model).filter(model.id == item_id).first()
@@ -77,7 +78,7 @@ def update_reference(resource: str, item_id: int, data: ReferenceUpdate, db: Ses
     return success(item)
 
 
-@router.delete("/{resource}/{item_id}", status_code=204)
+@auth_router.delete("/{resource}/{item_id}", status_code=204)
 def delete_reference(resource: str, item_id: int, db: Session = Depends(get_db)):
     model = _get_model(resource)
     item = db.query(model).filter(model.id == item_id).first()
