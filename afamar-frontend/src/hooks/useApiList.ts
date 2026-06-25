@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 interface UseApiListResult<T> {
   items: T[];
@@ -14,18 +14,20 @@ export function useApiList<T>(
   const [items, setItems] = useState<T[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const fetcherRef = useRef(fetcher);
+  fetcherRef.current = fetcher;
 
   const load = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      setItems(await fetcher());
+      setItems(await fetcherRef.current());
     } catch {
       setError(errorMsg);
     } finally {
       setLoading(false);
     }
-  }, [fetcher, errorMsg]);
+  }, [errorMsg]);
 
   useEffect(() => { load(); }, [load]);
 
