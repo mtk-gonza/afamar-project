@@ -14,7 +14,7 @@ router = APIRouter(dependencies=[Depends(get_current_user)])
 @router.get("")
 def list_measurements(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
     service = MeasurementService(db)
-    query = service.repo.db.query(service.repo.model).order_by(service.repo.model.scheduled_date.desc().nullslast())
+    query = service.repo.db.query(service.repo.model).order_by(service.repo.model.scheduled_date.desc(), service.repo.model.id.desc())
     page = paginate(db, query, skip, limit)
     return success(page.items, page.pagination)
 
