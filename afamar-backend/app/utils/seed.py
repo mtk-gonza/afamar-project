@@ -1,7 +1,5 @@
 import logging
-import shutil
 from pathlib import Path
-from uuid import uuid4
 
 from app.core.database import Base, SessionLocal, engine
 from app.models.material import Material, MaterialCategory, MaterialColor, MaterialThickness
@@ -11,8 +9,11 @@ from app.models.product_photo import ProductPhoto
 from app.models.setting import Setting
 from app.models.user import User
 from app.services.auth import hash_password
+from app.services.product_photo import ProductPhotoService
 
 logger = logging.getLogger(__name__)
+
+ALLOWED_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp"}
 
 
 def seed_default_data():
@@ -104,18 +105,18 @@ def seed_default_data():
 def _seed_product_photos(db):
     if db.query(ProductPhoto).first():
         return
-    upload_dir = (
+    seed_dir = (
         Path(__file__).resolve().parent.parent.parent
-        / "uploads"
+        / "seed"
         / "product_photos"
     )
-    if not upload_dir.exists():
-        logger.info("Uploads dir %s not found — skipping product photo seed", upload_dir)
+    if not seed_dir.exists():
+        logger.info("Seed dir %s not found — skipping product photo seed", seed_dir)
         return
 
-    images = sorted(upload_dir.glob("*"))
+    images = sorted(p for p in seed_dir.glob("*") if p.suffix.lower() in ALLOWED_EXTENSIONS)
     if not images:
-        logger.info("No images found in %s — skipping product photo seed", upload_dir)
+        logger.info("No valid images found in %s — skipping product photo seed", seed_dir)
         return
 
     titles = [
@@ -133,14 +134,17 @@ def _seed_product_photos(db):
         "Trabajo especial",
     ]
 
+    service = ProductPhotoService(db)
     for i, src_path in enumerate(images):
         idx = i % len(titles)
-        photo = ProductPhoto(
-            file_path=f"/uploads/product_photos/{src_path.name}",
+        with open(src_path, "rb") as f:
+            file_data = f.read()
+        service.create(
+            file_data=file_data,
+            filename=src_path.name,
             title=titles[idx],
-            description="",
         )
-        db.add(photo)
+        logger.info("Seeded photo: %s", src_path.name)
 
 
 if __name__ == "__main__":
