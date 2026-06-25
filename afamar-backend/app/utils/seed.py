@@ -3,7 +3,7 @@ import shutil
 from pathlib import Path
 from uuid import uuid4
 
-from app.core.database import SessionLocal
+from app.core.database import Base, SessionLocal, engine
 from app.models.material import Material, MaterialCategory, MaterialColor, MaterialThickness
 from app.models.options import AppOption
 from app.models.price_history import PriceHistory
@@ -16,35 +16,40 @@ logger = logging.getLogger(__name__)
 
 
 def seed_default_data():
+    Base.metadata.create_all(bind=engine)
     db = SessionLocal()
     try:
         if not db.query(MaterialCategory).first():
             for name in ["Granitos", "Cuarzos", "Sinterizados", "Mármoles"]:
                 db.add(MaterialCategory(name=name))
+            db.flush()
 
         if not db.query(MaterialColor).first():
             for c in ["Blanco", "Negro", "Gris", "Beige", "Crema", "Rojo", "Verde", "Azul", "Marrón", "Dorado", "Plateado"]:
                 db.add(MaterialColor(name=c))
+            db.flush()
 
         if not db.query(MaterialThickness).first():
             for t in ["1cm", "2cm", "3cm", "4cm", "6cm"]:
                 db.add(MaterialThickness(name=t))
+            db.flush()
 
         if not db.query(Material).first():
+            cat_map = {row.name: row.id for row in db.query(MaterialCategory).all()}
             common_materials = [
-                ("Granito Negro Absoluto", 1, "Negro", "2cm", 45.0),
-                ("Granito Blanco Dallas", 1, "Blanco", "2cm", 50.0),
-                ("Granito Gris Pulido", 1, "Gris", "2cm", 40.0),
-                ("Cuarzo Blanco Polar", 2, "Blanco", "2cm", 70.0),
-                ("Cuarzo Gris Oxford", 2, "Gris", "2cm", 75.0),
-                ("Cuarzo Beige", 2, "Beige", "2cm", 65.0),
-                ("Sinterizado Dekton", 3, "Gris", "2cm", 100.0),
-                ("Sinterizado Neolith", 3, "Blanco", "2cm", 110.0),
-                ("Mármol Travertino", 4, "Beige", "3cm", 60.0),
-                ("Mármol Crema Marfil", 4, "Crema", "3cm", 55.0),
+                ("Granito Negro Absoluto", "Granitos", "Negro", "2cm", 45.0),
+                ("Granito Blanco Dallas", "Granitos", "Blanco", "2cm", 50.0),
+                ("Granito Gris Pulido", "Granitos", "Gris", "2cm", 40.0),
+                ("Cuarzo Blanco Polar", "Cuarzos", "Blanco", "2cm", 70.0),
+                ("Cuarzo Gris Oxford", "Cuarzos", "Gris", "2cm", 75.0),
+                ("Cuarzo Beige", "Cuarzos", "Beige", "2cm", 65.0),
+                ("Sinterizado Dekton", "Sinterizados", "Gris", "2cm", 100.0),
+                ("Sinterizado Neolith", "Sinterizados", "Blanco", "2cm", 110.0),
+                ("Mármol Travertino", "Mármoles", "Beige", "3cm", 60.0),
+                ("Mármol Crema Marfil", "Mármoles", "Crema", "3cm", 55.0),
             ]
-            for name, cat_id, color, thickness, price in common_materials:
-                m = Material(name=name, category_id=cat_id, color=color, available_thickness=thickness, base_price=price)
+            for name, cat_name, color, thickness, price in common_materials:
+                m = Material(name=name, category_id=cat_map[cat_name], color=color, available_thickness=thickness, base_price=price)
                 db.add(m)
                 db.flush()
                 db.add(PriceHistory(material_id=m.id, material_name=name, price_m2=price))
@@ -108,6 +113,11 @@ def _seed_product_photos(db):
         logger.info("Uploads dir %s not found — skipping product photo seed", upload_dir)
         return
 
+    images = sorted(upload_dir.glob("*"))
+    if not images:
+        logger.info("No images found in %s — skipping product photo seed", upload_dir)
+        return
+
     titles = [
         "Mesada de cocina",
         "Mesada de baño",
@@ -123,20 +133,10 @@ def _seed_product_photos(db):
         "Trabajo especial",
     ]
 
-    images = sorted(upload_dir.glob("*"))
-    if not images:
-        logger.info("No images found in %s — skipping product photo seed", upload_dir)
-        return
-
     for i, src_path in enumerate(images):
         idx = i % len(titles)
-        ext = src_path.suffix
-        stored_name = f"{uuid4().hex}{ext}"
-        dest_path = upload_dir / stored_name
-        if src_path != dest_path:
-            shutil.copy2(str(src_path), str(dest_path))
         photo = ProductPhoto(
-            file_path=f"/uploads/product_photos/{stored_name}",
+            file_path=f"/uploads/product_photos/{src_path.name}",
             title=titles[idx],
             description="",
         )
