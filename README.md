@@ -1,243 +1,122 @@
-# AFAMAR
+# AFAMAR-PROJECT
+Web informativa, Sistema de gestión de presupuestos, órdenes de trabajo, clientes, materiales y stock para una marmolería.
 
-Sistema de gestión de presupuestos, órdenes de trabajo, clientes, materiales y stock para una marmolería.
-
-## Stack
-
-- **Backend:** Python 3.14 + FastAPI + SQLAlchemy + SQLite (MySQL via `DATABASE_URL`)
-- **Frontend:** Vite + React 19 + TypeScript + CSS Modules (BEM naming)
-- **DB Migrations:** Alembic
-- **Docker:** Imágenes multi-stage para backend y frontend
-
----
-
-## Requisitos previos
-
-- **Python 3.14+** — [python.org](https://www.python.org/downloads/)
-- **Node.js 20+** — [nodejs.org](https://nodejs.org/)
-- **npm 10+** (viene con Node.js)
-- **Git**
-
-Verificar instalación:
-
-```bash
-python --version
-node --version
-npm --version
-```
-
----
-
-## 1. Clonar el repositorio
-
+## PASO 1  
+Clonar repositorio:
 ```bash
 git clone https://github.com/mtk-gonza/afamar-project.git
+```
+Cambiar a al directorio:
+```bash
 cd afamar-project
 ```
 
----
+## PASO 2  
+Renombrar y colocar las variables de entorno:
+```bash
+cp .env.example .env
+nano .env
+```
 
-## 2. Backend
+### PASO 3
+Crear las imágenes de Docker:
+Verificar si existe la red 'infra-net':
+```bash
+docker network ls | grep infra-net
+```
+Si no existe, crearla:
+```bash
+docker network create infra-net
+```
+Luego:
+```bash
+docker compose build
+```
 
-### 2.1 Crear entorno virtual e instalar dependencias
+## PASO 4 
+En Dockhand ó Portainer, copiar el siguiente contenido. 
+Agregar las variables de entorno que están en el archivo `.env`, o bien adjuntar directamente el archivo.
+```yaml
+services:
+  backend:
+    image: afamar-backend:latest
+    container_name: afamar-backend
+    volumes:
+      - afamar-backend_uploads:/afamar-backend/uploads
+    environment:
+      - TZ=${TZ:-America/Argentina/Buenos_Aires}
+      - ENVIRONMENT=${ENVIRONMENT:-production}
+      - DB_HOST=${DB_HOST:-mysql-central}
+      - DB_PORT=${DB_PORT:-3306}
+      - DB_USER=${DB_USER:-afamar-project}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_NAME=${DB_NAME:-afamar-project}
+      - ELASTICSEARCH_HOST=${ELASTICSEARCH_HOST:-elasticsearch-central}
+      - ELASTICSEARCH_PORT=${ELASTICSEARCH_PORT:-9200}
+      - CORS_ALLOW_ORIGINS=${CORS_ALLOW_ORIGINS:-http://afamar-frontend:80}
+      - SECRET_KEY=${SECRET_KEY:-afamar-secret-key-change-in-production}
+      - ALGORITHM=${ALGORITHM:-HS256}
+      - ACCESS_TOKEN_EXPIRE_HOURS=${ACCESS_TOKEN_EXPIRE_HOURS:-2}
+      - FRONTEND_URL=${FRONTEND_URL:-http://afamar-frontend:80}
+      - DEBUG=${DEBUG:-false}
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:3095/api/health')"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 40s
+    networks:
+      - infra-net
+    ports:
+      - ${API_PORT:-3095}:3095
+    restart: unless-stopped
+
+  frontend:
+    image: afamar-frontend:latest
+    container_name: afamar-frontend
+    environment:
+      - TZ=${TZ:-America/Argentina/Buenos_Aires}
+      - ENVIRONMENT=${ENVIRONMENT:-production}
+      - API_URL=${API_URL:-/api/v1}
+      - LOG_LEVEL=${LOG_LEVEL:-info}
+    depends_on:
+      - backend
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3090"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+    ports:
+      - ${WEB_PORT:-3090}:80
+    networks:
+      - infra-net
+    restart: unless-stopped
+
+volumes:
+  afamar-backend_uploads:
+    name: afamar-backend_uploads
+
+networks:
+  infra-net:
+    driver: bridge
+    name: infra-net
+    enable_ipv6: false
+    external: true
+
+```
+
+### Opción alternativa para crear el stack
+
+En el directorio raíz se encuentra el archivo `stack-compose.yml`. Podés copiar el contenido y crear el stack directamente:
 
 ```bash
-cd afamar-backend
-
-# Crear el entorno virtual
-python -m venv venv
-
-# Activar (Windows — PowerShell)
-venv\Scripts\Activate.ps1
-
-# Activar (Windows — CMD)
-venv\Scripts\activate.bat
-
-# Activar (Linux/macOS)
-source venv/bin/activate
-
-# Instalar dependencias
-pip install -r requirements.txt
+cat stack-compose.yml
 ```
 
-### 2.2 Configurar variables de entorno
-
-El archivo `.env.example` ya viene con valores por defecto:
-crear .env y rellenar con los valores que hagan falta
-```env
-# Database
-DATABASE_URL=sqlite:///./afamar.db
-# DATABASE_URL=mysql+pymysql://user:password@localhost:3306/afamar
-# App
-APP_NAME=AFAMAR
-APP_VERSION=1.1.0
-DEBUG=true
-# CORS
-CORS_ORIGINS=http://localhost:3090,http://localhost:3000
-# Email (SMTP)
-SMTP_HOST=smtp.gmail.com
-SMTP_PORT=587
-SMTP_USER=tu-correo@gmail.com
-SMTP_PASSWORD=contraseña-de-gmail
-SMTP_FROM=tu-correo@gmail.com
+## PASO 5
+Ejecutar el seeder:
 ```
-
-> Para usar MySQL cambiar `DATABASE_URL` a:
-> `mysql+pymysql://usuario:password@host/nombre_db`
-
-### 2.3 Iniciar el servidor de desarrollo
-
-```bash
-uvicorn app.main:app --reload --port 3095
-```
-
-El servidor se levanta en `http://localhost:3095`.
-
-- Documentación interactiva: `http://localhost:3095/docs`
-- Health check: `http://localhost:3095/health`
-
-> En el primer inicio crea automáticamente todas las tablas de la base de datos y carga datos semilla (categorías, colores, espesores, materiales comunes con precios, opciones de especificaciones y configuraciones por defecto).
-
-### 2.4 Ejecutar tests
-
-```bash
-pytest -v
-```
-
-### 2.5 Linter
-
-```bash
-ruff check .
-```
-
----
-
-## 3. Frontend
-
-### 3.1 Instalar dependencias
-
-```bash
-cd afamar-frontend
-npm install
-```
-
-### 3.2 Iniciar servidor de desarrollo
-
-```bash
-npm run dev
-```
-
-Se levanta en `http://localhost:3090`. El frontend se comunica con el backend en `http://localhost:3095` (configurado en `.env` del backend mediante `CORS_ORIGINS`).
-
-### 3.3 Build de producción
-
-```bash
-npm run build
-```
-
-Genera los archivos estáticos en la carpeta `dist/`.
-
-### 3.4 Preview del build
-
-```bash
-npm run preview
-```
-
----
-
-## 4. Docker
-
-### Requisitos
-
-- Docker Engine 24+
-- Docker Compose v2+
-
-### Levantar todo
-
-```bash
-docker compose up -d
-```
-
-- Backend en `http://localhost:3095`
-- Frontend en `http://localhost:3090`
-
-### Detener
-
-```bash
-docker compose down
-```
-
----
-
-## 5. Estructura del proyecto
-
-```
-afamar-project/
-├── afamar-backend/
-│   ├── app/
-│   │   ├── main.py              # Entrypoint, crea tablas y datos semilla
-│   │   ├── core/                # Config, database engine, dependencias
-│   │   ├── models/              # Modelos ORM (Client, Budget, WorkOrder, Material, PoolStock, Setting, AppOption, Measurement, OnlineBudget, PriceHistory, ProductPhoto, User, DailyCash, CashMovement, BudgetStatus, WorkOrderStatus, PaymentMethod, PriorityLevel, FinishType)
-│   │   ├── schemas/             # Schemas Pydantic request/response
-│   │   ├── api/v1/              # Endpoints REST agrupados por recurso
-│   │   ├── services/            # Lógica de negocio
-│   │   ├── repositories/        # Capa de acceso a datos
-│   │   └── utils/               # Auto-numeración, datos semilla, paginación
-│   ├── tests/
-│   │   ├── conftest.py          # Fixtures de pytest (TestClient, BD basada en archivo para soporte multi-thread)
-│   │   ├── test_api.py          # Tests de integración
-│   │   └── test_product_photos.py # Tests de fotos de productos
-│   ├── requirements.txt
-│   ├── .env
-│   └── Dockerfile
-├── afamar-frontend/
-│   ├── src/
-│   │   ├── main.tsx             # Entrypoint React
-│   │   ├── App.tsx              # Router
-│   │   ├── api/                 # Cliente API tipado (axios)
-│   │   ├── types/               # Interfaces TypeScript
-│   │   ├── hooks/               # useApi, useMutation
-│   │   ├── context/             # NotificationContext
-│   │   ├── components/          # Layout, ErrorBoundary
-│   │   ├── pages/               # Dashboard, Budgets, WorkOrders, Clients, Materials, PoolStock, Measurements, OnlineBudgets, Calculator, Reports, Settings, DailyCash, ProductPhotos, Login, Public
-│   │   └── styles/              # Estilos globales y módulos CSS con BEM
-│   ├── package.json
-│   └── Dockerfile
-├── docker-compose.yml
-├── AGENTS.md                    # Contexto para asistentes IA
-└── README.md
-```
-
----
-
-## 6. Convenciones principales
-
-- **CSS Modules + BEM:** `styles["block__element--modifier"]`
-- **Patrón Repository + Service** para acceso a datos y lógica de negocio
-- **Prefix `/api/v1/...`** en todos los endpoints
-- **Respuesta API estandarizada:** `{ success, data, error, pagination? }`
-- **Numeración automática:** Presupuestos `P-000001`, Órdenes `A-000001`
-- **Conversión Presupuesto → Orden:** `POST /api/v1/work-orders/from-budget/{id}`
-- **Notificaciones toast:** `useNotify()` desde `NotificationContext`
-- **Estados de carga:** `dataLoading=true` → selects deshabilitados con "Cargando..."; `dataError` → bloque de error con botón reintentar
-
----
-
-## 7. Comandos rápidos
-
-```bash
-# Backend
-cd afamar-backend
-.\venv\Scripts\Activate.ps1        # Activar venv (Windows PowerShell)
-pip install -r requirements.txt  # Instalar dependencias
-uvicorn app.main:app --reload --port 3095    # Servidor dev :3095
-ruff check .                     # Linter
-pytest                           # Tests
-
-# Frontend
-cd afamar-frontend
-npm install                      # Instalar dependencias
-npm run dev                      # Servidor dev :3090
-npm run build                    # Build producción (tsc + vite)
-npm run preview                  # Preview build producción
+docker exec -it afamar-backend python -m app.utils.seed
 ```

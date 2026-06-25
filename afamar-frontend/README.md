@@ -14,7 +14,7 @@ Revisar URL de la API en public/config.js
 
 1. Clona el repositorio:
 ```bash
-https://github.com/mtk-gonza/afamar-project.git
+git clone https://github.com/mtk-gonza/afamar-project.git
 cd afamar-project/adamar-frontend
 ```
 2. Inicia el servidor de desarrollo:

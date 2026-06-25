@@ -1,7 +1,5 @@
 services:
   backend:
-    build:
-      context: ./afamar-backend
     image: afamar-backend:latest
     container_name: afamar-backend
     volumes:
@@ -36,8 +34,6 @@ services:
     restart: unless-stopped
 
   frontend:
-    build:
-      context: ./afamar-frontend
     image: afamar-frontend:latest
     container_name: afamar-frontend
     environment:

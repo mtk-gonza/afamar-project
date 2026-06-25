@@ -17,8 +17,6 @@ from app.core.database import Base, engine, sync_schema
 from app.core.logging import setup_logging, check_database
 from app.core.responses import error
 from app.models import *  # noqa: F401, F403
-from app.utils.seed import seed_default_data
-
 setup_logging()
 logger = logging.getLogger(__name__)
 
@@ -62,7 +60,6 @@ async def lifespan(app: FastAPI):
         command.stamp(alembic_cfg, "head")
     except Exception:
         logger.warning("Could not stamp alembic head", exc_info=True)
-    seed_default_data()
     yield
 
 

@@ -99,23 +99,14 @@ def seed_default_data():
 def _seed_product_photos(db):
     if db.query(ProductPhoto).first():
         return
-    frontend_portfolio = (
-        Path(__file__).resolve().parent.parent.parent.parent
-        / "afamar-frontend"
-        / "src"
-        / "assets"
-        / "portfolio"
-    )
     upload_dir = (
         Path(__file__).resolve().parent.parent.parent
         / "uploads"
         / "product_photos"
     )
-    if not frontend_portfolio.exists():
-        logger.warning("Frontend portfolio dir not found: %s — skipping product photo seed", frontend_portfolio)
+    if not upload_dir.exists():
+        logger.info("Uploads dir %s not found — skipping product photo seed", upload_dir)
         return
-
-    upload_dir.mkdir(parents=True, exist_ok=True)
 
     titles = [
         "Mesada de cocina",
@@ -132,15 +123,26 @@ def _seed_product_photos(db):
         "Trabajo especial",
     ]
 
-    for i, src_path in enumerate(sorted(frontend_portfolio.glob("*.jpg")), start=0):
+    images = sorted(upload_dir.glob("*"))
+    if not images:
+        logger.info("No images found in %s — skipping product photo seed", upload_dir)
+        return
+
+    for i, src_path in enumerate(images):
         idx = i % len(titles)
         ext = src_path.suffix
         stored_name = f"{uuid4().hex}{ext}"
         dest_path = upload_dir / stored_name
-        shutil.copy2(str(src_path), str(dest_path))
+        if src_path != dest_path:
+            shutil.copy2(str(src_path), str(dest_path))
         photo = ProductPhoto(
             file_path=f"/uploads/product_photos/{stored_name}",
             title=titles[idx],
             description="",
         )
         db.add(photo)
+
+
+if __name__ == "__main__":
+    logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(name)s: %(message)s")
+    seed_default_data()
