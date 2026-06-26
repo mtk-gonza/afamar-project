@@ -105,3 +105,11 @@ async def unhandled_exception_handler(_request: Request, exc: Exception):
 @app.get("/health")
 def health():
     return {"status": "ok", "version": settings.APP_VERSION}
+
+
+@app.get("/health/ready")
+def health_ready():
+    ok, msg = check_database()
+    if ok:
+        return {"status": "ready", "database": "connected", "version": settings.APP_VERSION}
+    return {"status": "not_ready", "database": msg, "version": settings.APP_VERSION}

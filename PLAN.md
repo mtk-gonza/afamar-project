@@ -26,8 +26,8 @@
 | # | Área | Mejora | Archivos | Estado |
 |---|------|--------|----------|--------|
 | 12 | Backend | Eliminar `sync_schema()` (frágil en MySQL) | `app/core/database.py`, `app/main.py` | ✅ |
-| 13 | Backend | Rate limiting con `slowapi` | `app/main.py`, `requirements.txt` | ⏳ |
-| 14 | Backend | Healthcheck con verificación de DB | `app/main.py` | ⏳ |
+| 13 | Backend | Rate limiting con `slowapi` | `app/main.py`, `requirements.txt` | ✅ (in-memory, Redis opcional) |
+| 14 | Backend | Healthcheck con verificación de DB | `app/main.py` | ✅ |
 | 15 | Frontend | Vitest + tests de componentes | `vitest.config.ts`, `src/**/*.test.tsx` | ⏳ |
 | 16 | Infra | Optimizar Dockerfiles (capas npm ci) | `afamar-frontend/Dockerfile` | ⏳ |
 | 17 | Infra | `.env.example` con valores documentados | `.env.example` | ⏳ |
