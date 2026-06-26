@@ -3,6 +3,7 @@ from typing import Any, Optional
 
 from sqlalchemy import func
 from sqlalchemy.orm import Session
+from sqlalchemy.sql import literal_column
 
 from app.models.budget import Budget
 from app.models.client import Client
@@ -69,11 +70,12 @@ class ReportService:
         ]
 
     def monthly_sales(self, year: int, date_from: Optional[date] = None, date_to: Optional[date] = None) -> list[dict[str, Any]]:
+        from sqlalchemy import extract
         query = self.db.query(
-            func.strftime("%m", Budget.created_at).label("month"),
+            extract("month", Budget.created_at).label("month"),
             func.sum(Budget.total).label("total"),
             func.sum(Budget.total_usd).label("total_usd"),
-        ).filter(Budget.status == "approved", func.strftime("%Y", Budget.created_at) == str(year))
+        ).filter(Budget.status == "APPROVED", extract("year", Budget.created_at) == year)
         if date_from:
             query = query.filter(Budget.created_at >= date_from)
         if date_to:
@@ -81,7 +83,7 @@ class ReportService:
         results = query.group_by("month").all()
         return [
             {
-                "month": r.month,
+                "month": int(r.month) if r.month else 0,
                 "total": float(r.total) if r.total else 0,
                 "total_usd": float(r.total_usd) if r.total_usd else 0,
             }
@@ -101,12 +103,12 @@ class ReportService:
 
     def dashboard_stats(self) -> dict[str, Any]:
         return {
-            "pending_budgets": self.db.query(Budget).filter(Budget.status == "pending").count(),
-            "approved_budgets": self.db.query(Budget).filter(Budget.status == "approved").count(),
-            "rejected_budgets": self.db.query(Budget).filter(Budget.status == "rejected").count(),
-            "budgeted_orders": self.db.query(WorkOrder).filter(WorkOrder.status == "budgeted").count(),
-            "in_production_orders": self.db.query(WorkOrder).filter(WorkOrder.status == "in_production").count(),
-            "finished_orders": self.db.query(WorkOrder).filter(WorkOrder.status == "finished").count(),
+            "pending_budgets": self.db.query(Budget).filter(Budget.status == "PENDING").count(),
+            "approved_budgets": self.db.query(Budget).filter(Budget.status == "APPROVED").count(),
+            "rejected_budgets": self.db.query(Budget).filter(Budget.status == "REJECTED").count(),
+            "workshop_orders": self.db.query(WorkOrder).filter(WorkOrder.status == "WORKSHOP").count(),
+            "finished_orders": self.db.query(WorkOrder).filter(WorkOrder.status == "FINISHED").count(),
+            "delivered_orders": self.db.query(WorkOrder).filter(WorkOrder.status == "DELIVERED").count(),
             "pool_stock_total": self.db.query(func.sum(PoolStock.quantity)).scalar() or 0,
             "total_clients": self.db.query(Client).count(),
             "online_budgets": self.db.query(OnlineBudget).count(),

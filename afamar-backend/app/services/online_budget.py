@@ -10,10 +10,10 @@ from app.services.work_order import WorkOrderService
 from app.utils.numbering import generate_budget_number
 
 
-TRAFORO_MAP = {
-    "APERTURA + PEGADO PILETA": "TRAFORO DE PILETA",
-    "APERTURA PILETA APOYO": "TRAFORO DE PILETA DE APOYO",
-    "APERTURA ANAFE": "TRAFORO DE ANAFE",
+CUTOUT_MAP = {
+    "APERTURA + PEGADO PILETA": "POOL CUTOUT",
+    "APERTURA PILETA APOYO": "SUPPORT POOL CUTOUT",
+    "APERTURA ANAFE": "COOKTOP CUTOUT",
 }
 
 
@@ -36,7 +36,7 @@ class OnlineBudgetService:
         online_budget = self.repo.get_by_id(budget_id)
         if not online_budget:
             raise ValueError("Online budget not found")
-        if online_budget.status == "converted_to_order":
+        if online_budget.status == "CONVERTED_TO_OT":
             raise ValueError("Online budget already converted")
 
         items_json = online_budget.items_data or "[]"
@@ -68,34 +68,34 @@ class OnlineBudgetService:
                     })
                 continue
 
-            if es_unidad and detail in TRAFORO_MAP:
+            if es_unidad and detail in CUTOUT_MAP:
                 fabrication_details_list.append({
                     "type": "fabrication",
-                    "concept": TRAFORO_MAP[detail],
+                    "concept": CUTOUT_MAP[detail],
                     "detail": detail,
                     "quantity": qty,
                     "total": total,
                 })
-            elif detail in {"ZOCALOS", "ZÓCALO"}:
+            elif detail.upper() in {"PLINTH", "PLINTHS"}:
                 fabrication_details_list.append({
                     "type": "fabrication",
-                    "concept": "ZÓCALO",
+                    "concept": "PLINTH",
                     "detail": detail,
                     "quantity": qty,
                     "total": total,
                 })
-            elif detail == "FRENTE":
+            elif detail.upper() == "FRONT":
                 fabrication_details_list.append({
                     "type": "fabrication",
-                    "concept": "FRENTE",
+                    "concept": "FRONT",
                     "detail": detail,
                     "quantity": qty,
                     "total": total,
                 })
-            elif detail == "TERMINACION":
+            elif detail.upper() == "FINISHING":
                 fabrication_details_list.append({
                     "type": "fabrication",
-                    "concept": "OTRA",
+                    "concept": "OTHER",
                     "detail": detail,
                     "quantity": qty,
                     "total": total,
@@ -118,7 +118,7 @@ class OnlineBudgetService:
 
         wo_data = {
             "client_id": 1,
-            "status": "measurement",
+            "status": "MEASUREMENT",
             "origin": "Online",
             "materials_data": items_json,
             "fabrication_details": fabrication_details,
@@ -147,11 +147,11 @@ class OnlineBudgetService:
                     pool_id=pool.id,
                     type="exit",
                     quantity=1,
-                    notes=f"Convertido desde presupuesto online {online_budget.number}",
+                    notes=f"Converted from online budget {online_budget.number}",
                 )
                 self.repo.db.add(movement)
 
-        online_budget.status = "converted_to_order"
+        online_budget.status = "CONVERTED_TO_OT"
         self.repo.db.commit()
         self.repo.db.refresh(work_order)
         return work_order

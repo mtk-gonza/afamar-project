@@ -37,7 +37,7 @@ class BudgetService:
 
     @staticmethod
     def compute_surcharge(payment_method: str | None, installments: int) -> dict:
-        if payment_method == "TARJETA DE CRÉDITO":
+        if payment_method == "CREDIT_CARD":
             pct = 0 if installments <= 2 else installments * 5
         else:
             pct = 0
@@ -298,7 +298,7 @@ class BudgetService:
             "number": number,
             "client_id": budget.client_id,
             "budget_id": budget.id,
-            "status": "measurement",
+            "status": "MEASUREMENT",
             "origin": "Desde alternativa",
             "material": alt_nombre,
             "material_price_m2": alt_precio_m2,
@@ -328,7 +328,7 @@ class BudgetService:
             "balance_due_usd": max(0, total_usd_val - (budget.deposit_usd or 0)),
             "payment_method": budget.payment_method,
             "installments": budget.installments or 1,
-            "priority": budget.priority or "Normal",
+            "priority": budget.priority or "NORMAL",
             "delivery_date": budget.delivery_date,
             "notes": budget.notes,
             "fabrication_details": budget.fabrication_details,

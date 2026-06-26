@@ -55,12 +55,12 @@ export function Dashboard() {
           <span className={styles.dashboard__cardLabel}>Aprobados</span>
         </div>
         <div className={styles.dashboard__card}>
-          <span className={styles.dashboard__cardValue}>{stats.budgeted_orders}</span>
-          <span className={styles.dashboard__cardLabel}>Órdenes Presupuestadas</span>
+          <span className={styles.dashboard__cardValue}>{stats.workshop_orders}</span>
+          <span className={styles.dashboard__cardLabel}>En Taller</span>
         </div>
         <div className={styles.dashboard__card}>
-          <span className={styles.dashboard__cardValue}>{stats.in_production_orders}</span>
-          <span className={styles.dashboard__cardLabel}>En Producción</span>
+          <span className={styles.dashboard__cardValue}>{stats.delivered_orders}</span>
+          <span className={styles.dashboard__cardLabel}>Entregadas</span>
         </div>
         <div className={styles.dashboard__card}>
           <span className={styles.dashboard__cardValue}>{stats.finished_orders}</span>

@@ -378,9 +378,9 @@ def generate_budget_pdf(
     # ── PAGO PILLS + VALIDEZ ──
     E.append(Spacer(1, 24))
     pills = Table([[
-        _pill("EFECTIVO"),
-        _pill("TRANSFERENCIA"),
-        _pill("TARJETA"),
+        _pill("Efectivo"),
+        _pill("Transferencia"),
+        _pill("Tarjeta"),
     ]], colWidths=[None, None, None])
     pills.setStyle(TableStyle([
         ("LEFTPADDING", (0, 0), (-1, -1), 0),
@@ -522,10 +522,11 @@ def generate_work_order_pdf(
     elements.append(Spacer(1, 0.4 * cm))
 
     status_labels = {
-        "budgeted": "Presupuestado",
-        "in_production": "En Producción",
-        "completed": "Completado",
-        "delivered": "Entregado",
+        "MEASUREMENT": "Medición",
+        "WORKSHOP": "En Taller",
+        "FINISHED": "Terminada",
+        "DELIVERED": "Entregada",
+        "CANCELLED": "Cancelada",
     }
     status_label = status_labels.get(order_data.get("status", ""), order_data.get("status", ""))
     elements.append(Paragraph(f"<b>Estado:</b> {status_label}", normal))

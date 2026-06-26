@@ -13,7 +13,7 @@ class Budget(Base):
     id: Mapped[int] = mapped_column(primary_key=True, index=True)
     number: Mapped[str] = mapped_column(String(20), unique=True, nullable=False)
     client_id: Mapped[int] = mapped_column(ForeignKey("clients.id"), nullable=False)
-    status: Mapped[str] = mapped_column(String(20), default="PENDIENTE")
+    status: Mapped[str] = mapped_column(String(20), default="PENDING")
 
     material: Mapped[str] = mapped_column(String(200), nullable=True)
     material_price_m2: Mapped[float] = mapped_column(Float, default=0.0)
@@ -55,7 +55,7 @@ class Budget(Base):
     estimated_delivery: Mapped[str] = mapped_column(String(100), nullable=True)
     estimated_date: Mapped[date] = mapped_column(Date, nullable=True)
 
-    priority: Mapped[str] = mapped_column(String(20), default="Normal")
+    priority: Mapped[str] = mapped_column(String(20), default="NORMAL")
     date: Mapped[datetime] = mapped_column(DateTime, nullable=True)
     delivery_date: Mapped[datetime] = mapped_column(DateTime, nullable=True)
 

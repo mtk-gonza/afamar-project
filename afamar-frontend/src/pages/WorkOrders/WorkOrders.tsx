@@ -51,9 +51,10 @@ export function WorkOrders() {
   };
 
   const columns = [
-    { key: "budgeted", label: "Presupuestado" },
-    { key: "in_production", label: "En Producción" },
-    { key: "finished", label: "Finalizado" },
+    { key: "MEASUREMENT", label: "Medición" },
+    { key: "WORKSHOP", label: "Taller" },
+    { key: "FINISHED", label: "Terminado" },
+    { key: "DELIVERED", label: "Entregado" },
   ];
 
   return (
@@ -96,7 +97,7 @@ export function WorkOrders() {
                 <td>{o.number}</td>
                 <td>{o.client_id}</td>
                 <td><StatusBadge status={o.status} /></td>
-                <td>{o.priority === "Urgente" ? "Urgente" : "Normal"}</td>
+                <td>{o.priority === "URGENT" ? "Urgente" : "Normal"}</td>
                 <td>$ {o.total.toFixed(2)}</td>
                 <td>{o.total_usd > 0 ? `US$ ${o.total_usd.toFixed(2)}` : "-"}</td>
                 <td>{o.balance_due > 0 ? `$ ${o.balance_due.toFixed(2)}` : "Pagado"}</td>
@@ -120,7 +121,7 @@ export function WorkOrders() {
                 .map((o) => (
                   <div
                     key={o.id}
-                    className={`${styles.workOrders__card} ${o.priority === "Urgente" ? styles["workOrders__card--urgent"] : ""}`}
+                    className={`${styles.workOrders__card} ${o.priority === "URGENT" ? styles["workOrders__card--urgent"] : ""}`}
                     onClick={() => navigate(`/admin/work-orders/${o.id}/edit`)}
                   >
                     <strong>{o.number}</strong>
@@ -128,7 +129,7 @@ export function WorkOrders() {
                     <span>{o.material || "Sin material"}</span>
                     <span>{o.delivery_date ? `Entrega: ${new Date(o.delivery_date).toLocaleDateString()}` : "Sin fecha"}</span>
                     <span>$ {o.total.toFixed(2)}</span>
-                    {o.priority === "Urgente" && <span className={styles.workOrders__urgentBadge}>Urgente</span>}
+                    {o.priority === "URGENT" && <span className={styles.workOrders__urgentBadge}>Urgente</span>}
                   </div>
                 ))}
             </div>

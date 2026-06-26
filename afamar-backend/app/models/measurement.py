@@ -18,6 +18,6 @@ class Measurement(Base):
     notes: Mapped[str] = mapped_column(Text, nullable=True)
     sketch_data: Mapped[str] = mapped_column(Text, nullable=True)
     photos_data: Mapped[str] = mapped_column(Text, nullable=True)
-    status: Mapped[str] = mapped_column(String(20), default="PENDIENTE")
+    status: Mapped[str] = mapped_column(String(20), default="PENDING")
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now(), onupdate=func.now())

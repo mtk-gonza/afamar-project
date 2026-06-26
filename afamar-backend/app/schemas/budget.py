@@ -105,7 +105,7 @@ class BudgetBase(BaseModel):
     validity_days: int = 15
     estimated_delivery: str | None = None
     estimated_date: Optional[date] = None
-    priority: str = "Normal"
+    priority: str = "NORMAL"
     date: Optional[datetime] = None
     delivery_date: Optional[datetime] = None
     digital_signature: str | None = None

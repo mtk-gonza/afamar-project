@@ -57,9 +57,13 @@ async def lifespan(app: FastAPI):
     sync_schema()
     alembic_cfg = AlembicConfig("alembic.ini")
     try:
-        command.stamp(alembic_cfg, "head")
+        command.upgrade(alembic_cfg, "head")
     except Exception:
-        logger.warning("Could not stamp alembic head", exc_info=True)
+        logger.warning("Alembic upgrade failed — stamping head instead", exc_info=True)
+        try:
+            command.stamp(alembic_cfg, "head")
+        except Exception:
+            logger.warning("Alembic stamp also failed", exc_info=True)
     yield
 
 

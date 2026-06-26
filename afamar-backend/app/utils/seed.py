@@ -57,10 +57,10 @@ def seed_default_data():
 
         if not db.query(AppOption).first():
             spec_options = {
-                "finish_type": ["Pulido", "Mate", "Apomazado", "Cepillado", "Arenado", "Encerado"],
-                "front_type": ["Recto", "Boleado", "Media caña", "Chamfer", "Escociado"],
-                "bacha_type": ["Sobreponer", "Empotrar", "Integrada", "Bajo mesada", "Sin bacha"],
-                "anafe_type": ["Empotrar", "Sobreponer", "Sin anafe"],
+                "finish_type": ["Polished", "Matte", "Honed", "Brushed", "Sandblasted", "Waxed"],
+                "front_type": ["Straight", "Bullnose", "Half-Bullnose", "Chamfer", "Eased"],
+                "bacha_type": ["Drop-in", "Undermount", "Integrated", "Apron-front", "No-sink"],
+                "anafe_type": ["Drop-in", "Slide-in", "No-cooktop"],
             }
             for cat, values in spec_options.items():
                 for i, val in enumerate(values):

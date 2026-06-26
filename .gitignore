@@ -6,6 +6,7 @@
 *.pid
 .DS_Store
 Thumbs.db
+uploads/
 
 # =========================
 # PYTHON (FastAPI)
@@ -35,6 +36,8 @@ app/logs/
 # =========================
 node_modules/
 dist/
+vite.config.js
+vite.config.d.ts
 build/
 .vite/
 

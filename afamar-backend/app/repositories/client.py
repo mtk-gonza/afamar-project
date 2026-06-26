@@ -54,7 +54,7 @@ class ClientRepository(BaseRepository):
 
         total_billed = (
             self.db.query(func.coalesce(func.sum(WorkOrder.total), 0))
-            .filter(WorkOrder.client_id == client_id, WorkOrder.status.in_(["in_production", "finished"]))
+            .filter(WorkOrder.client_id == client_id, WorkOrder.status.in_(["WORKSHOP", "FINISHED"]))
             .scalar()
             or 0.0
         )

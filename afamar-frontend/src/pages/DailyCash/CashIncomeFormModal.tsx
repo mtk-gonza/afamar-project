@@ -6,7 +6,7 @@ import { useReferences } from "../../context/ReferencesContext";
 import styles from "./DailyCashPage.module.css";
 
 const FOLDER_STATUS_MAP: Record<string, string> = {
-  MEDICION: "Medición", TALLER: "Taller", TERMINADA: "Terminada", ENTREGADA: "Entregada",
+  MEASUREMENT: "Medición", WORKSHOP: "Taller", FINISHED: "Terminada", DELIVERED: "Entregada",
 };
 
 function formatCurrency(n: number): string {

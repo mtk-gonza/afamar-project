@@ -15,7 +15,7 @@ class MeasurementBase(BaseModel):
     notes: str | None = None
     sketch_data: str | None = None
     photos_data: str | None = None
-    status: str = "PENDIENTE"
+    status: str = "PENDING"
 
 
 class MeasurementCreate(MeasurementBase):

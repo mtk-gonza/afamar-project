@@ -113,7 +113,7 @@ export function OnlineBudgets() {
                   <td>$ {ob.total_net_ars.toFixed(2)}</td>
                   <td>US$ {ob.total_net_usd.toFixed(2)}</td>
                   <td>$ {ob.total_consolidated.toFixed(2)}</td>
-                  <td><StatusBadge status={ob.status} labels={{ ONLINE: "Online", ["CONVERTIDO A OT"]: "Convertido a OT" }} /></td>
+                  <td><StatusBadge status={ob.status} labels={{ ONLINE: "Online", CONVERTED_TO_OT: "Convertido a OT" }} /></td>
                   <td>
                     <div className={styles.onlineBudgets__actionBtnGroup}>
                       <button type="button" className={styles["onlineBudgets__actionBtn--edit"]} onClick={() => navigate(`/admin/online-budgets/${ob.id}/edit`)}>Editar</button>

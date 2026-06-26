@@ -56,7 +56,7 @@ def list_unified_budgets(
     if status:
         locales = locales.filter(service.repo.model.status == status)
     else:
-        locales = locales.filter(service.repo.model.status != "approved")
+        locales = locales.filter(service.repo.model.status != "APPROVED")
 
     if q:
         locales = locales.outerjoin(Client).filter(

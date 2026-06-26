@@ -101,8 +101,8 @@ export function DailyCashPage() {
   const totalExpenses = expenseMovements.reduce((s, m) => s + (m.amount || 0), 0);
   const sum = (previousBalance || 0) + totalIncome;
   const currentBalance = sum - totalExpenses;
-  const cashIncome = incomeMovements.filter((m) => (m.payment_method || "").toLowerCase() === "efectivo").reduce((s, m) => s + (m.amount || 0), 0);
-  const bankTransferExpenses = expenseMovements.filter((m) => m.expense_type === "Transferencia Banco").reduce((s, m) => s + (m.amount || 0), 0);
+  const cashIncome = incomeMovements.filter((m) => (m.payment_method || "").toUpperCase() === "CASH").reduce((s, m) => s + (m.amount || 0), 0);
+  const bankTransferExpenses = expenseMovements.filter((m) => m.expense_type === "BANK_TRANSFER").reduce((s, m) => s + (m.amount || 0), 0);
   const realCash = (previousBalance || 0) + cashIncome - (totalExpenses - bankTransferExpenses);
   const isToday = date === today;
 
@@ -222,8 +222,8 @@ export function DailyCashPage() {
                           <td>{m.description || "-"}</td>
                           <td className={styles["cash__egreso"]}>{formatCurrency(m.amount)}</td>
                           <td>
-                            <span className={`badge ${m.expense_type === "Gasto" ? "badge-rejected" : "badge-production"}`}>
-                              {m.expense_type || "Gasto"}
+                            <span className={`badge ${m.expense_type === "EXPENSE" ? "badge-rejected" : "badge-production"}`}>
+                              {m.expense_type === "EXPENSE" ? "Gasto" : "Transf. Banco"}
                             </span>
                           </td>
                           <td>

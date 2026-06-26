@@ -47,17 +47,11 @@ def build_online_budget_message(number: str, client_name: str, total_ars: float,
 
 def build_work_order_message(number: str, client_name: str, status: str, total: float, total_usd: float | None = None) -> str:
     status_labels = {
-        "MEDICION": "📏 Medición",
-        "TALLER": "🔧 Taller",
-        "TERMINADA": "✅ Terminada",
-        "ENTREGADA": "🚚 Entregada",
-        "CANCELADO": "❌ Cancelado",
-        "measurement": "📏 Medición",
-        "budgeted": "📋 Presupuestada",
-        "in_production": "🔧 Producción",
-        "finished": "✅ Terminada",
-        "delivered": "🚚 Entregada",
-        "cancelled": "❌ Cancelado",
+        "MEASUREMENT": "📏 Measurement",
+        "WORKSHOP": "🔧 Workshop",
+        "FINISHED": "✅ Finished",
+        "DELIVERED": "🚚 Delivered",
+        "CANCELLED": "❌ Cancelled",
     }
     label = status_labels.get(status, status)
     msg = (

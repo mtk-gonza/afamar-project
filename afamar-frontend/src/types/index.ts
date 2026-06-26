@@ -48,7 +48,7 @@ export interface Budget {
   id: number;
   number: string;
   client_id: number;
-  status: "PENDIENTE" | "ONLINE" | "APROBADO" | "RECHAZADO" | "CONVERTIDO A OT";
+  status: "PENDING" | "ONLINE" | "APPROVED" | "REJECTED" | "CONVERTED_TO_OT";
   material: string | null;
   material_price_m2: number;
   material_price_m2_usd: number;
@@ -262,9 +262,9 @@ export interface DashboardStats {
   pending_budgets: number;
   approved_budgets: number;
   rejected_budgets: number;
-  budgeted_orders: number;
-  in_production_orders: number;
+  workshop_orders: number;
   finished_orders: number;
+  delivered_orders: number;
   pool_stock_total: number;
   total_clients: number;
   online_budgets: number;

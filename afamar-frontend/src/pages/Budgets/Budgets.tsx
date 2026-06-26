@@ -1,4 +1,3 @@
-import { useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { api } from "../../api/client";
 import { useNotify } from "../../context/NotificationContext";
@@ -8,7 +7,6 @@ import { StatusBadge } from "../../components/ui/StatusBadge";
 import { TableActions } from "../../components/ui/TableActions";
 import { ListPage } from "../../components/ui/ListPage";
 import { useApiList } from "../../hooks/useApiList";
-import { useReferences } from "../../context/ReferencesContext";
 import { formatARS, formatUSD, formatBalance, formatDate } from "../../utils/formatCurrency";
 import { downloadPdf } from "../../utils/downloadPdf";
 import type { Budget } from "../../types";
@@ -19,19 +17,17 @@ export function Budgets() {
   const notify = useNotify();
   const { confirm, dialog } = useConfirm();
   const { items, loading, error, load } = useApiList(() => api.getBudgets(), "Error al cargar presupuestos");
-  const { budgetStatuses } = useReferences();
-  const BS = useMemo(() => Object.fromEntries(budgetStatuses.map((s) => [s.name, s.name])), [budgetStatuses]);
 
   const handleApproval = async (b: Budget) => {
-    if (b.status === BS.PENDIENTE) {
-      await api.updateBudget(b.id, { status: BS.APROBADO });
+    if (b.status === "PENDING") {
+      await api.updateBudget(b.id, { status: "APPROVED" });
       if (await confirm("¿Convertir a Orden de Trabajo?")) {
         await api.createFromBudget(b.id);
       }
-    } else if (b.status === BS.APROBADO) {
-      await api.updateBudget(b.id, { status: BS.RECHAZADO });
+    } else if (b.status === "APPROVED") {
+      await api.updateBudget(b.id, { status: "REJECTED" });
     } else {
-      await api.updateBudget(b.id, { status: BS.PENDIENTE });
+      await api.updateBudget(b.id, { status: "PENDING" });
     }
     load();
   };
@@ -83,7 +79,7 @@ export function Budgets() {
                 <td>{formatBalance(b.balance_due)}</td>
                 <td>{formatDate(b.created_at)}</td>
                 <TableActions onEdit={() => navigate(`/admin/budgets/${b.id}/edit`)} onDelete={() => handleDelete(b.id, b.number)}>
-                  {b.status === BS.PENDIENTE && <button className={styles.budgets__actionBtn} onClick={() => handleApproval(b)}>Aprobar</button>}
+                  {b.status === "PENDING" && <button className={styles.budgets__actionBtn} onClick={() => handleApproval(b)}>Aprobar</button>}
                   <button className={styles.budgets__actionBtn} title="Descargar PDF" onClick={() => handleDownloadPdf(b)}>PDF</button>
                   <button className={styles.budgets__actionBtn} title="Enviar por email" onClick={() => handleSendEmail(b)}>Email</button>
                   <button className={styles.budgets__actionBtn} title="Enviar por WhatsApp" onClick={() => handleSendWhatsApp(b)}>WA</button>

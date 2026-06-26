@@ -5,9 +5,14 @@
 - **Backend:** Python 3.14 + FastAPI + SQLAlchemy + SQLite (swappable to MySQL via `DATABASE_URL`)
 - **Frontend:** Vite + React 19 + TypeScript + CSS Modules (BEM naming)
 - **DB Migrations:** Alembic
-- **Status/Reference tables:** `budget_statuses`, `work_order_statuses`, `payment_methods`, `priority_levels`, `finish_types` (seeded via migration, managed via `/api/v1/references/{resource}` endpoints)
-- **Budget statuses (string):** `PENDIENTE`, `ONLINE`, `APROBADO`, `RECHAZADO`, `CONVERTIDO A OT`
-- **WorkOrder statuses (string):** `MEDICION`, `TALLER`, `TERMINADA`, `ENTREGADA`, `CANCELADO`
+- **Status/Reference tables:** `budget_statuses`, `work_order_statuses`, `payment_methods`, `priority_levels`, `finish_types` (seeded via migration `c1b5500fd00b`, remapped to English via `e5f6a7b8c9d0`, managed via `/api/v1/references/{resource}` endpoints)
+- **Budget statuses (string):** `PENDING`, `ONLINE`, `APPROVED`, `REJECTED`, `CONVERTED_TO_OT`
+- **WorkOrder statuses (string):** `MEASUREMENT`, `WORKSHOP`, `FINISHED`, `DELIVERED`, `CANCELLED`
+- **Payment methods:** `CASH`, `TRANSFER`, `CREDIT_CARD`, `DEBIT_CARD`, `CHECK`, `MIXED`
+- **Priorities:** `LOW`, `NORMAL`, `HIGH`, `URGENT`
+- **Expense types:** `EXPENSE`, `BANK_TRANSFER`
+- **Measurement statuses:** `PENDING`, `DONE`, `CANCELLED`
+- **All DB values are English; frontend displays Spanish via `t()` helper** in `afamar-frontend/src/utils/translate.ts`
 
 ## Auth system
 
@@ -40,7 +45,7 @@ afamar-backend/    — FastAPI app
     repositories/  — data access layer (one per model)
     utils/         — auto-numbering (P-000001, A-000001), seed data, pagination
   requirements.txt
-  alembic/         — migration scripts (b96f5327d74a is head)
+  alembic/         — migration scripts (e5f6a7b8c9d0 is head)
   .env             — DATABASE_URL, CORS_ORIGINS, etc.
 
 afamar-frontend/   — Vite + React + TS
@@ -85,7 +90,7 @@ Note: both project folders carry the `afamar-` prefix (afamar-backend, afamar-fr
 - `BudgetFormFinancial`, `CashIncomeFormModal` receive `paymentMethods` from references context.
 - `WoFormBasic` receives `workOrderStatuses` + `priorityLevels` from references context for status buttons/priority select.
 - `Budgets` receives `budgetStatuses` from references context for approval logic.
-- `WorkOrders.tsx` compares priority against `"Urgente"` (matches DB reference value).
+- `WorkOrders.tsx` compares priority against `"URGENT"` (English DB value).
 
 ## Refactoring Progress
 
@@ -114,6 +119,15 @@ Note: both project folders carry the `afamar-` prefix (afamar-backend, afamar-fr
 - Fixed unused vars in WoFormObservations
 - Fixed priority comparison in WorkOrders.tsx (`"urgent"` → `"Urgente"`)
 
+**Phase 5 — English internal values** ✅
+- Created `translate.ts` with `t()` helper (English key → Spanish display)
+- Updated `constants/index.ts` keys to English (`PENDING`, `APPROVED`, `URGENT`, etc.)
+- Updated `types/index.ts` union types to English
+- Updated `StatusBadge.tsx` to use `t()` for display
+- Updated all page components (Budgets, WorkOrders, Reports, OnlineBudgets, DailyCash, Measurements, Dashboard) to use English comparisons
+- Created alembic migration `e5f6a7b8c9d0` that remaps all Spanish values to English in business + reference tables
+- Changed `main.py` lifespan from `command.stamp` to `command.upgrade` so migrations run on startup
+
 ### Knowledge transfer: `afamar` (old project at D:\projects\PERSONAL\afamar)
 
 The same refactoring patterns apply 1:1 — form splitting, shared hooks, shared UI components. The old project uses Tailwind instead of CSS Modules, has no auth system, no ReferencesContext (no backend reference endpoints), and uses Recharts instead of custom SVG charts. All business features (budgets, work orders, materials, measurements, pool stock, online budgets, reports, settings, calculator, daily cash) exist in both projects.
@@ -140,7 +154,7 @@ npm run preview                      # preview production build
 
 - README.md at root has full step-by-step setup instructions.
 - Docker compose with multi-stage images (backend + frontend), external network `infra-net`.
-- Backend creates all tables on first import (`Base.metadata.create_all`) — Alembic should be used for schema changes after initial setup.
+- `main.py` lifespan runs `Base.metadata.create_all` then `alembic upgrade head` (fallback: stamp). With a fresh DB this runs all migrations including reference seeding.
 - `Setting` (app config) uses key-value model with a `Setting` DB table; `Settings` (pydantic-settings) reads `.env` for app-level config.
 - PDF generation uses `xhtml2pdf` + Jinja2 templates — `services/pdf_html.py` is the primary PDF service. `services/pdf.py` (reportlab) remains as legacy fallback.
 - Templates in `app/templates/presupuesto_pdf.html` and `app/templates/orden_pdf.html` render via Jinja2 → xhtml2pdf → PDF bytes.
@@ -161,6 +175,7 @@ npm run preview                      # preview production build
 - `api/client.ts` uses typed wraps — each method typed with proper response interface instead of `any`.
 - `api/client.ts` mutation methods (`create*`, `update*`) use `data: any` instead of `data: Partial<T>` because forms pass shape-mismatched data (e.g. `ItemRow[]` instead of `BudgetItem[]`).
 - `vite.config.ts` has proxies (`/api` → `http://localhost:3095` and `/uploads` → `http://localhost:3095`) so in dev mode requests go through Vite, avoiding CORS. The default `http.ts` `baseURL` is `/api/v1` (relative). Override via `VITE_API_URL` env var for production or via `window.APP_CONFIG?.API_URL` for runtime config.
+- **I18n:** All DB values are English (PENDING, APPROVED, CASH, NORMAL, etc.). `afamar-frontend/src/utils/translate.ts` has `enToEsLabels` map and `t(key)` function that returns Spanish display text. `StatusBadge` uses `t()` by default. Reference data in dropdowns uses `pm.label` from the API (stays in Spanish since migration `e5f6a7b8c9d0` preserves original labels).
 - Dual currency support: Budget and WorkOrder have ARS fields (`total`, `subtotal`, etc.) and USD fields (`total_usd`, `subtotal_usd`, `transport_usd`) plus `usd_rate` for exchange rate.
 - Reference tables (budget_statuses, work_order_statuses, payment_methods, priority_levels, finish_types) are created by Alembic migration and seeded with initial values (Spanish status keys, payment methods, priority levels, finish types). The FK columns on budgets/work_orders reference these tables but the string `status`/`priority`/`payment_method` fields remain as denormalized copies for backward compatibility.
 - Budget enhancement fields: `adicionales` (separate table), `pool_id`/`pool_price`/`pool_currency`, `deposit_received`/`deposit_usd`/`balance_due`/`balance_due_usd`/`balance_paid`, `payment_method`/`installments`, `digital_signature`/`signed_at`, `snapshot_name/phone/email/address`, `design_observations`/`important_observations`/`fabrication_details`, `estimated_date`/`validity_days`, `materials_data`/`pools_data`.
@@ -256,3 +271,4 @@ npm run preview                      # preview production build
 - `afamar-backend/app/services/product_photo.py`: ProductPhotoService with upload validation, Pillow resize/convert to WebP.
 - `afamar-backend/app/api/v1/product_photos.py`: Product photos CRUD endpoints — GETs are public, POST/PUT/DELETE require auth.
 - `afamar-backend/tests/test_product_photos.py`: 9 tests covering upload, validation, resize, update, delete, 404, public access.
+- `afamar-frontend/src/utils/translate.ts`: `enToEsLabels` map + `t(key)` helper for Spanish display of English DB values.

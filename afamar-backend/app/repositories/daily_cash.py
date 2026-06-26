@@ -48,11 +48,11 @@ class DailyCashRepository:
 
         cash_income = sum(
             m.amount for m in movements
-            if m.type == "INCOME" and (m.payment_method or "").lower() == "cash"
+            if m.type == "INCOME" and (m.payment_method or "").upper() == "CASH"
         )
         tb_expenses = sum(
             m.amount for m in movements
-            if m.type == "EXPENSE" and m.expense_type == "Bank Transfer"
+            if m.type == "EXPENSE" and m.expense_type == "BANK_TRANSFER"
         )
         cash.real_cash = (cash.previous_balance or 0) + cash_income - (total_expenses - tb_expenses)
 

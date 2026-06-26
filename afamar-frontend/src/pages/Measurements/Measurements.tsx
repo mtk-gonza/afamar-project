@@ -8,6 +8,7 @@ import { ListPage } from "../../components/ui/ListPage";
 import { useApiList } from "../../hooks/useApiList";
 import { formatDate } from "../../utils/formatCurrency";
 import { MEASUREMENT_STATUSES } from "../../constants";
+import { t } from "../../utils/translate";
 import { MeasurementForm } from "./MeasurementForm";
 import type { Measurement } from "../../types";
 import styles from "./Measurements.module.css";
@@ -91,7 +92,7 @@ export function Measurements() {
                 <td>
                   <select className={styles.measurements__statusSelect} value={m.status} onChange={(e) => handleStatusChange(m, e.target.value)}>
                     {Object.values(MEASUREMENT_STATUSES).map((k) => (
-                      <option key={k} value={k}>{k}</option>
+                      <option key={k} value={k}>{t(k)}</option>
                     ))}
                   </select>
                 </td>

@@ -12,29 +12,29 @@ export const MOVEMENT_TYPES = {
 
 // Measurement statuses
 export const MEASUREMENT_STATUSES = {
-  PENDIENTE: "PENDIENTE",
-  REALIZADO: "REALIZADO",
-  CANCELADO: "CANCELADO",
+  PENDING: "PENDING",
+  DONE: "DONE",
+  CANCELLED: "CANCELLED",
 } as const;
 
 // Status colors for badges
 export const STATUS_COLORS: Record<string, string> = {
-  PENDIENTE: "#f59e0b",
+  PENDING: "#f59e0b",
   ONLINE: "#3b82f6",
-  APROBADO: "#22c55e",
-  RECHAZADO: "#ef4444",
-  "CONVERTIDO A OT": "#8b5cf6",
-  MEDICION: "#f59e0b",
-  TALLER: "#3b82f6",
-  TERMINADA: "#22c55e",
-  ENTREGADA: "#06b6d4",
-  CANCELADO: "#ef4444",
+  APPROVED: "#22c55e",
+  REJECTED: "#ef4444",
+  CONVERTED_TO_OT: "#8b5cf6",
+  MEASUREMENT: "#f59e0b",
+  WORKSHOP: "#3b82f6",
+  FINISHED: "#22c55e",
+  DELIVERED: "#06b6d4",
+  CANCELLED: "#ef4444",
 } as const;
 
 // Priority colors
 export const PRIORITY_COLORS: Record<string, string> = {
-  Baja: "#22c55e",
-  Normal: "#3b82f6",
-  Alta: "#f59e0b",
-  Urgente: "#ef4444",
+  LOW: "#22c55e",
+  NORMAL: "#3b82f6",
+  HIGH: "#f59e0b",
+  URGENT: "#ef4444",
 } as const;

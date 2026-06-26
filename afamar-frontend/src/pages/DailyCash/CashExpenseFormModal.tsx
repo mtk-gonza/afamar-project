@@ -1,9 +1,10 @@
 import { useState } from "react";
 import { api } from "../../api/client";
 import { useNotify } from "../../context/NotificationContext";
+import { t } from "../../utils/translate";
 import styles from "./DailyCashPage.module.css";
 
-const EXPENSE_TYPES = ["Gasto", "Transferencia Banco"];
+const EXPENSE_TYPES = ["EXPENSE", "BANK_TRANSFER"];
 
 interface Props {
   date: string;
@@ -15,7 +16,7 @@ export function CashExpenseFormModal({ date, onClose, onSaved }: Props) {
   const notify = useNotify();
   const [description, setDescription] = useState("");
   const [amount, setAmount] = useState("");
-  const [expenseType, setExpenseType] = useState("Gasto");
+  const [expenseType, setExpenseType] = useState("EXPENSE");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -54,7 +55,7 @@ export function CashExpenseFormModal({ date, onClose, onSaved }: Props) {
               <label>Tipo</label>
               <select className={styles["cash__input"]} value={expenseType}
                 onChange={(e) => setExpenseType(e.target.value)}>
-                {EXPENSE_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
+                {EXPENSE_TYPES.map((et) => <option key={et} value={et}>{t(et)}</option>)}
               </select>
             </div>
           </div>

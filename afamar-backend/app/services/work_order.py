@@ -103,7 +103,7 @@ def _create_cash_movement_on_deposit(
         "type": "INCOME",
         "amount": deposit,
         "description": f"Seña {order_number} - {client_name}",
-        "payment_method": payment_method or "Transferencia",
+        "payment_method": payment_method or "TRANSFER",
         "order_number": order_number,
         "order_total": deposit,
         "client_name": client_name,
@@ -115,7 +115,7 @@ def _update_client_total_purchased(db: Session, client_id: int):
     from sqlalchemy import func
     total = (
         db.query(func.coalesce(func.sum(WorkOrder.total), 0))
-        .filter(WorkOrder.client_id == client_id, WorkOrder.status == "finished")
+        .filter(WorkOrder.client_id == client_id, WorkOrder.status == "FINISHED")
         .scalar()
     )
     db.query(Client).filter(Client.id == client_id).update({"total_purchased": total})
@@ -168,9 +168,9 @@ class WorkOrderService:
         return self.repo.create(data)
 
     def create_from_budget(self, budget) -> WorkOrder:
-        if budget.status == "converted_to_order":
+        if budget.status == "CONVERTED_TO_OT":
             raise ValueError("Budget already converted to a work order")
-        if budget.status != "approved":
+        if budget.status != "APPROVED":
             raise ValueError("Budget must be approved to convert")
 
         from app.services.budget import BudgetService
@@ -243,8 +243,8 @@ class WorkOrderService:
             "number": generate_work_order_number(last_number),
             "client_id": budget.client_id,
             "budget_id": budget.id,
-            "status": "measurement",
-            "origin": "Presupuesto",
+            "status": "MEASUREMENT",
+            "origin": "Budget",
             "material": material_nombre,
             "material_price_m2": material_precio_m2,
             "materials_data": json.dumps(materials_dict),
@@ -275,7 +275,7 @@ class WorkOrderService:
             "balance_paid": budget.balance_paid or False,
             "payment_method": budget.payment_method,
             "installments": budget.installments or 1,
-            "priority": budget.priority or "Normal",
+            "priority": budget.priority or "NORMAL",
             "delivery_date": budget.delivery_date,
             "notes": budget.notes,
             "fabrication_details": budget.fabrication_details,
@@ -292,7 +292,7 @@ class WorkOrderService:
             "snapshot_address": budget.snapshot_address,
             "date": budget.date,
         }
-        budget.status = "converted_to_order"
+        budget.status = "CONVERTED_TO_OT"
         order = self.repo.create(data)
 
         if not budget.stock_deducted:
@@ -313,10 +313,9 @@ class WorkOrderService:
         return order
 
     VALID_TRANSITIONS = {
-        "measurement": {"budgeted"},
-        "budgeted": {"in_production"},
-        "in_production": {"finished"},
-        "finished": {"delivered"},
+        "MEASUREMENT": {"WORKSHOP"},
+        "WORKSHOP": {"FINISHED"},
+        "FINISHED": {"DELIVERED"},
     }
 
     def update(self, order_id: int, data: dict) -> Optional[WorkOrder]:
@@ -327,12 +326,12 @@ class WorkOrderService:
         new_status = data.get("status", old_status)
 
         if new_status != old_status:
-            if new_status != "cancelled" and new_status not in self.VALID_TRANSITIONS.get(old_status, set()):
+            if new_status != "CANCELLED" and new_status not in self.VALID_TRANSITIONS.get(old_status, set()):
                 raise ValueError(f"Invalid status transition from {old_status} to {new_status}")
-            if new_status == "cancelled" and order.stock_deducted:
+            if new_status == "CANCELLED" and order.stock_deducted:
                 restore_pool_stock(self.repo.db, order.pool_id, order.pools_data, order.number)
                 order.stock_deducted = False
-            if new_status == "finished" and order.client_id:
+            if new_status == "FINISHED" and order.client_id:
                 _update_client_total_purchased(self.repo.db, order.client_id)
 
         result = self.repo.update(order, data)

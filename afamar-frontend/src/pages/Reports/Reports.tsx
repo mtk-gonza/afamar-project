@@ -9,30 +9,30 @@ import styles from "./Reports.module.css";
 const MONTHS = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
 
 const PIE_COLORS: Record<string, string> = {
-  pending: "#3b82f6",
-  approved: "#22c55e",
-  rejected: "#ef4444",
-  budgeted: "#f59e0b",
-  in_production: "#8b5cf6",
-  finished: "#06b6d4",
-  delivered: "#6366f1",
+  PENDING: "#3b82f6",
+  APPROVED: "#22c55e",
+  REJECTED: "#ef4444",
+  MEASUREMENT: "#f59e0b",
+  WORKSHOP: "#8b5cf6",
+  FINISHED: "#06b6d4",
+  DELIVERED: "#6366f1",
 };
 
 const BUDGET_STATUS_LABELS: Record<string, string> = {
-  pending: "Pendientes",
-  approved: "Aprobados",
-  rejected: "Rechazados",
+  PENDING: "Pendientes",
+  APPROVED: "Aprobados",
+  REJECTED: "Rechazados",
 };
 
 const WORK_STATUS_LABELS: Record<string, string> = {
-  budgeted: "Presupuestadas",
-  in_production: "En producción",
-  finished: "Terminadas",
-  delivered: "Entregadas",
+  MEASUREMENT: "Medición",
+  WORKSHOP: "Taller",
+  FINISHED: "Terminadas",
+  DELIVERED: "Entregadas",
 };
 
 export function Reports() {
-  const [selectedStatus, setSelectedStatus] = useState("pending");
+  const [selectedStatus, setSelectedStatus] = useState("PENDING");
   const [budgetsByStatus, setBudgetsByStatus] = useState<any[]>([]);
   const [ordersInProduction, setOrdersInProduction] = useState<WorkOrder[]>([]);
   const [monthlySales, setMonthlySales] = useState<{ month: string; total: number; total_usd: number }[]>([]);
@@ -47,18 +47,18 @@ export function Reports() {
     setLoading(true);
     await Promise.allSettled([
       api.getBudgetsByStatus(selectedStatus, dateFrom || undefined, dateTo || undefined).then(setBudgetsByStatus),
-      api.getWorkOrdersByStatus("in_production", dateFrom || undefined, dateTo || undefined).then(setOrdersInProduction as any),
+      api.getWorkOrdersByStatus("WORKSHOP", dateFrom || undefined, dateTo || undefined).then(setOrdersInProduction as any),
       api.getMonthlySales(undefined, dateFrom || undefined, dateTo || undefined).then(setMonthlySales),
       api.getMostUsedMaterials().then(setMostUsed),
     ]);
     const [budgetCounts, workCounts] = await Promise.all([
       Promise.all(
-        ["pending", "approved", "rejected"].map((s) =>
+        ["PENDING", "APPROVED", "REJECTED"].map((s) =>
           api.getBudgetsByStatus(s, dateFrom || undefined, dateTo || undefined).then((r) => ({ status: s, count: r.length }))
         )
       ),
       Promise.all(
-        ["budgeted", "in_production", "finished", "delivered"].map((s) =>
+        ["MEASUREMENT", "WORKSHOP", "FINISHED", "DELIVERED"].map((s) =>
           api.getWorkOrdersByStatus(s, dateFrom || undefined, dateTo || undefined).then((r) => ({ status: s, count: r.length }))
         )
       ),
@@ -150,9 +150,9 @@ export function Reports() {
           <section className={styles.reports__section}>
             <h3 className={styles.reports__sectionTitle}>Presupuestos por estado</h3>
             <select className={styles.reports__select} value={selectedStatus} onChange={(e) => setSelectedStatus(e.target.value)}>
-              <option value="pending">Pendientes</option>
-              <option value="approved">Aprobados</option>
-              <option value="rejected">Rechazados</option>
+              <option value="PENDING">Pendientes</option>
+              <option value="APPROVED">Aprobados</option>
+              <option value="REJECTED">Rechazados</option>
             </select>
             <table className={styles.reports__table}>
               <thead><tr><th>Número</th><th>Total ARS</th><th>Total USD</th><th>Fecha</th></tr></thead>
@@ -184,7 +184,7 @@ export function Reports() {
                     <tr key={o.id}>
                       <td>{o.number}</td>
                       <td>$ {o.total.toFixed(2)}</td>
-                      <td>{o.priority === "urgent" ? "Urgente" : "Normal"}</td>
+                      <td>{o.priority === "URGENT" ? "Urgente" : "Normal"}</td>
                     </tr>
                   ))}
                 </tbody>

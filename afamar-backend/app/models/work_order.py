@@ -15,7 +15,7 @@ class WorkOrder(Base):
     client_id: Mapped[int] = mapped_column(ForeignKey("clients.id"), nullable=False)
     budget_id: Mapped[int] = mapped_column(ForeignKey("budgets.id"), nullable=True)
 
-    status: Mapped[str] = mapped_column(String(20), default="MEDICION")
+    status: Mapped[str] = mapped_column(String(20), default="MEASUREMENT")
     origin: Mapped[str] = mapped_column(String(30), default="Manual")
 
     status_id: Mapped[int | None] = mapped_column(ForeignKey("work_order_statuses.id"), nullable=True)
@@ -54,7 +54,7 @@ class WorkOrder(Base):
     payment_method: Mapped[str] = mapped_column(String(50), nullable=True)
     installments: Mapped[int] = mapped_column(Integer, default=1)
 
-    priority: Mapped[str] = mapped_column(String(20), default="Normal")
+    priority: Mapped[str] = mapped_column(String(20), default="NORMAL")
     delivery_date: Mapped[date] = mapped_column(Date, nullable=True)
 
     digital_signature: Mapped[str] = mapped_column(Text, nullable=True)

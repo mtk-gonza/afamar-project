@@ -40,7 +40,7 @@ class WorkOrderBase(BaseModel):
     balance_due_usd: float = 0.0
     payment_method: str | None = None
     installments: int = 1
-    priority: str = "Normal"
+    priority: str = "NORMAL"
     delivery_date: Optional[date] = None
     digital_signature: str | None = None
     fabrication_details: str | None = None
