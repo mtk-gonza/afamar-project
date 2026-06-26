@@ -1,7 +1,7 @@
 import logging
 from pathlib import Path
 
-from app.core.database import SessionLocal
+from app.core.database import Base, SessionLocal
 from app.models.material import Material, MaterialCategory, MaterialColor, MaterialThickness
 from app.models.options import AppOption
 from app.models.price_history import PriceHistory
@@ -148,4 +148,6 @@ def _seed_product_photos(db):
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(name)s: %(message)s")
+    # Ensure tables exist when running standalone (not needed when called from app lifespan)
+    Base.metadata.create_all(bind=SessionLocal().get_bind())
     seed_default_data()
