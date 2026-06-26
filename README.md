@@ -117,7 +117,7 @@ cat stack-compose.yml
 
 ## PASO 5
 Ejecutar el seeder:
-```
+```bash
 docker exec -it afamar-backend python -m app.utils.seed
 ```
 

@@ -22,16 +22,31 @@ cp .env.example .env
 ```
 
 ## 📦 Instalación y ▶️ Ejecución del servidor
-```bash
+
 - Crear y activar entorno virtual
+```bash
 python -m venv venv
 venv\Scripts\activate      # Windows
-
+```
 - Instalar dependencias
+```bash
 pip install -r requirements.txt
-
+```
 - Ejecución del servidor
+```bash
 uvicorn app.main:app --reload --port 3095
+```
+En otra terminal con venv activado:
+- Revisar version de Alembic
+```bash
+python -m alembic current
+```
+- Actualizar version de Alembic
+```bash
+python -m alembic upgrade head
+```
 
 - Swagger UI
+```
 http://127.0.0.1:3095/docs
+```
