@@ -16,7 +16,6 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app.api.v1.router import router as api_router
 from app.core.config import settings
-from app.core.database import engine
 from app.core.logging import setup_logging, check_database
 from app.core.responses import error
 from app.models import *  # noqa: F401, F403

@@ -3,7 +3,8 @@
 ## Session context (Jun 2026)
 
 **Implemented (#1–#9):**
-- `run_migrations()` extraído, sin duplicado en lifespan
+- `sync_schema()` eliminado; solo Alembic `upgrade head` en lifespan
+- `Base.metadata.create_all` removido de `seed.py` (solo tests lo usan)
 - `SECRET_KEY` sin default (obligatorio en `.env`)
 - Auth verificada: routers admin ya protegidos (solo públicos: auth, photos GET, references GET, online POST)
 - ErrorBoundary envolviendo `<Routes>` en `App.tsx`

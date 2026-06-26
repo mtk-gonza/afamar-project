@@ -1,7 +1,7 @@
 import logging
 from pathlib import Path
 
-from app.core.database import Base, SessionLocal, engine
+from app.core.database import SessionLocal
 from app.models.material import Material, MaterialCategory, MaterialColor, MaterialThickness
 from app.models.options import AppOption
 from app.models.price_history import PriceHistory
@@ -17,7 +17,6 @@ ALLOWED_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp"}
 
 
 def seed_default_data():
-    Base.metadata.create_all(bind=engine)
     db = SessionLocal()
     try:
         if not db.query(MaterialCategory).first():

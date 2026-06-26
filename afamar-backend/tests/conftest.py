@@ -1,11 +1,14 @@
 import os
 import tempfile
 
+os.environ["RATE_LIMIT_ENABLED"] = "false"
+
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
+from app.core.config import settings
 from app.core.database import Base
 from app.core.dependencies import get_current_user, get_db
 from app.main import app
