@@ -89,5 +89,4 @@ class BudgetRepository(BaseRepository):
         for key, value in data.items():
             if value is not None:
                 setattr(budget, key, value)
-        self.db.flush()
         return budget

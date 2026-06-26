@@ -23,17 +23,24 @@ class ClientService:
         return self.repo.search(term)
 
     def create(self, data: dict) -> Client:
-        return self.repo.create(data)
+        client = self.repo.create(data)
+        self.repo.db.commit()
+        self.repo.db.refresh(client)
+        return client
 
     def update(self, client_id: int, data: dict) -> Optional[Client]:
         client = self.repo.get_by_id(client_id)
         if not client:
             return None
-        return self.repo.update(client, data)
+        result = self.repo.update(client, data)
+        self.repo.db.commit()
+        self.repo.db.refresh(result)
+        return result
 
     def delete(self, client_id: int) -> bool:
         client = self.repo.get_by_id(client_id)
         if not client:
             return False
         self.repo.delete(client)
+        self.repo.db.commit()
         return True

@@ -1,6 +1,7 @@
-import { useCallback, useEffect, useState } from "react";
-import { api } from "../../api/client";
-import type { AppOption, MaterialCategory, MaterialColor, MaterialThickness, SettingsData } from "../../types";
+import { useState } from "react";
+import { api } from "@/api/client";
+import { useGet, useList } from "@/shared/api/hooks";
+import type { AppOption, MaterialCategory, MaterialColor, MaterialThickness, SettingsData } from "@/types";
 import styles from "./Settings.module.css";
 
 const OPTION_CATEGORIES = [
@@ -21,7 +22,6 @@ export function Settings() {
     pdf_footer: "", budget_terms: "", delivery_terms: "", warranty_text: "", observaciones_automaticas: "",
   });
   const [saved, setSaved] = useState(false);
-  const [_loadError, setLoadError] = useState(false);
 
   // ── Tab: Opciones ──
   const [options, setOptions] = useState<Record<string, AppOption[]>>({});
@@ -34,21 +34,31 @@ export function Settings() {
   const [newThickness, setNewThickness] = useState("");
 
   // ── Load ──
-  const loadGeneral = useCallback(() => {
-    api.getSettings().then(setSettings).catch(() => setLoadError(true));
-  }, []);
+  useGet(["settings"], async () => {
+    const s = await api.getSettings();
+    setSettings(s);
+    return s;
+  });
 
-  const loadOptions = useCallback(() => {
-    OPTION_CATEGORIES.forEach((cat) => {
-      api.getOptions(cat.key).then((opts: any) => setOptions((prev) => ({ ...prev, [cat.key]: opts }))).catch(() => setLoadError(true));
+  const { load: loadOptions } = useList(["settingsOptions"], async () => {
+    const results = await Promise.all([
+      ...OPTION_CATEGORIES.map((cat) =>
+        api.getOptions(cat.key).then((opts: any) => ({ cat: cat.key, opts }))
+      ),
+      api.getCategories().then((c) => ({ cat: "categories", val: c })),
+      api.getColors().then((c) => ({ cat: "colors", val: c })),
+      api.getThicknesses().then((t) => ({ cat: "thicknesses", val: t })),
+    ]);
+    const optsMap: Record<string, AppOption[]> = {};
+    results.forEach((r: any) => {
+      if (r.cat === "categories") setCategories(r.val);
+      else if (r.cat === "colors") setColors(r.val);
+      else if (r.cat === "thicknesses") setThicknesses(r.val);
+      else optsMap[r.cat] = r.opts;
     });
-    api.getCategories().then(setCategories).catch(() => setLoadError(true));
-    api.getColors().then(setColors).catch(() => setLoadError(true));
-    api.getThicknesses().then(setThicknesses).catch(() => setLoadError(true));
-  }, []);
-
-  useEffect(() => { loadGeneral(); }, [loadGeneral]);
-  useEffect(() => { loadOptions(); }, [loadOptions]);
+    setOptions(optsMap);
+    return [];
+  });
 
   const saveSettings = async () => {
     await api.updateSettings(settings);

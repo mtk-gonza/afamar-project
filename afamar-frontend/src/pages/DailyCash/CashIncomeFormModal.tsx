@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { Search } from "lucide-react";
-import { api } from "../../api/client";
-import { useNotify } from "../../context/NotificationContext";
-import { useReferences } from "../../context/ReferencesContext";
+import { api } from "@/api/client";
+import { useNotify } from "@/context/NotificationContext";
+import { useReferences } from "@/context/ReferencesContext";
 import styles from "./DailyCashPage.module.css";
 
 const FOLDER_STATUS_MAP: Record<string, string> = {

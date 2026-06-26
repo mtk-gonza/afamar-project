@@ -1,6 +1,6 @@
 import { createContext, useContext, useCallback, useEffect, useState, type ReactNode } from "react";
-import { api } from "../api/client";
-import type { ReferenceItem } from "../types";
+import { api } from "@/api/client";
+import type { ReferenceItem } from "@/types";
 
 interface ReferencesData {
   budgetStatuses: ReferenceItem[];

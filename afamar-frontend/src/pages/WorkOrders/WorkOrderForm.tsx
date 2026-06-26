@@ -1,10 +1,11 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { api } from "../../api/client";
-import { useNotify } from "../../context/NotificationContext";
-import { ErrorBlock } from "../../components/ui/ErrorBlock";
-import { FormActions } from "../../components/ui/FormActions";
-import type { WorkOrder, Client, Material, MaterialColor, MaterialThickness, AppOption, PoolStock, SketchPage } from "../../types";
+import { api } from "@/api/client";
+import { useNotify } from "@/context/NotificationContext";
+import { ErrorBlock } from "@/components/ui/ErrorBlock";
+import { FormActions } from "@/components/ui/FormActions";
+import { useList, useGet } from "@/shared/api/hooks";
+import type { WorkOrder, Client, Material, MaterialColor, MaterialThickness, AppOption, PoolStock, SketchPage } from "@/types";
 import type { WoItemRow } from "./WoFormItemsGrid";
 import { WoFormBasic } from "./WoFormBasic";
 import { WoFormSpecs } from "./WoFormSpecs";
@@ -56,7 +57,7 @@ export function WorkOrderForm() {
   const navigate = useNavigate();
   const notify = useNotify();
   const isEdit = Boolean(id);
-  const mounted = useRef(true);
+  const numId = id ? Number(id) : null;
 
   const [clients, setClients] = useState<Client[]>([]);
   const [materials, setMaterials] = useState<Material[]>([]);
@@ -72,76 +73,64 @@ export function WorkOrderForm() {
   const [digitalSignature, setDigitalSignature] = useState<string | null>(null);
   const [fabItems, setFabItems] = useState<WoItemRow[]>([emptyFabItem()]);
   const [budgetedItems, setBudgetedItems] = useState<WoItemRow[]>([emptyFabItem()]);
-  const [dataLoading, setDataLoading] = useState(true);
-  const [dataError, setDataError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
-  const loadData = useCallback(async () => {
-    setDataLoading(true);
-    setDataError(null);
-    const results = await Promise.allSettled([
-      api.getClients().then(setClients),
-      api.getMaterials().then(setMaterials),
-      api.getColors().then(setColors),
-      api.getThicknesses().then(setThicknesses),
-      api.getOptions("bacha_type").then(setBachaTypes),
-      api.getOptions("anafe_type").then(setAnafeTypes),
-      api.getPoolStock().then(setPools),
+  const { loading: dataLoading, error: dataError, load: loadData } = useList(["woFormData"], async () => {
+    const [cl, mat, col, thick, bacha, anafe, ps] = await Promise.all([
+      api.getClients(),
+      api.getMaterials(),
+      api.getColors(),
+      api.getThicknesses(),
+      api.getOptions("bacha_type"),
+      api.getOptions("anafe_type"),
+      api.getPoolStock(),
     ]);
-    const errors = results.filter((r) => r.status === "rejected") as PromiseRejectedResult[];
-    if (errors.length > 0) {
-      const msg = "Error al cargar datos del formulario";
-      notify(msg, "error");
-      if (mounted.current) setDataError(msg);
-    }
-    if (mounted.current) setDataLoading(false);
-  }, [notify]);
+    setClients(cl);
+    setMaterials(mat);
+    setColors(col);
+    setThicknesses(thick);
+    setBachaTypes(bacha);
+    setAnafeTypes(anafe);
+    setPools(ps);
+    api.getNextWorkOrderNumber().then((res) => setNextNumber(res.number)).catch(() => {});
+    return [];
+  });
 
-  useEffect(() => {
-    mounted.current = true;
-    loadData();
-    api.getNextWorkOrderNumber().then((res) => {
-      if (mounted.current) setNextNumber(res.number);
-    }).catch(() => {});
-    if (id) {
-      api.getWorkOrder(Number(id)).then((o: WorkOrder) => {
-        if (!mounted.current) return;
-        setForm({
-          client_id: o.client_id,
-          client_name: "", client_phone: "", client_email: "", client_address: "",
-          status: o.status, material: o.material || "", color: o.color || "",
-          thickness: o.thickness || "", bacha: o.bacha || "", anafe: o.anafe || "",
-          currency: o.currency, usd_rate: o.usd_rate,
-          subtotal: o.subtotal, transport: o.transport, installation: o.installation,
-          discount: o.discount, total: o.total,
-          subtotal_usd: o.subtotal_usd, transport_usd: o.transport_usd, total_usd: o.total_usd,
-          deposit_received: o.deposit_received, deposit_currency: o.deposit_currency, deposit_usd: o.deposit_usd,
-          balance_due: o.balance_due, balance_due_usd: o.balance_due_usd, balance_paid: o.balance_paid,
-          payment_method: o.payment_method || "", installments: o.installments,
-          priority: o.priority, delivery_date: o.delivery_date || "", notes: o.notes || "",
-          fabrication_details: o.fabrication_details || "", budgeted_details: o.budgeted_details || "",
-          design_observations: o.design_observations || "", important_observations: o.important_observations || "",
-          pool_id: o.pool_id || 0, pool_price: o.pool_price, pool_currency: o.pool_currency,
-          snapshot_name: o.snapshot_name || "", snapshot_phone: o.snapshot_phone || "",
-          snapshot_email: o.snapshot_email || "", snapshot_address: o.snapshot_address || "",
-        });
-        if (o.digital_signature) setDigitalSignature(o.digital_signature);
-        try {
-          const parsed = JSON.parse(o.fabrication_details || "[]");
-          if (Array.isArray(parsed) && parsed.length > 0) {
-            setFabItems(parsed.map((i: any) => ({ _key: fabKey(), concept: i.concept || "", detail: i.detail || "", m2: i.m2 || 0, material: i.material || "" })));
-          }
-        } catch {}
-        try {
-          const parsed = JSON.parse(o.budgeted_details || "[]");
-          if (Array.isArray(parsed) && parsed.length > 0) {
-            setBudgetedItems(parsed.map((i: any) => ({ _key: fabKey(), concept: i.concept || "", detail: i.detail || "", m2: i.m2 || 0, material: i.material || "" })));
-          }
-        } catch {}
-      }).catch(() => notify("Error al cargar la orden de trabajo", "error"));
-    }
-    return () => { mounted.current = false; };
-  }, [id, loadData, notify]);
+  useGet(["workOrder", numId], () => api.getWorkOrder(numId!).then((o: WorkOrder) => {
+    setForm({
+      client_id: o.client_id,
+      client_name: "", client_phone: "", client_email: "", client_address: "",
+      status: o.status, material: o.material || "", color: o.color || "",
+      thickness: o.thickness || "", bacha: o.bacha || "", anafe: o.anafe || "",
+      currency: o.currency, usd_rate: o.usd_rate,
+      subtotal: o.subtotal, transport: o.transport, installation: o.installation,
+      discount: o.discount, total: o.total,
+      subtotal_usd: o.subtotal_usd, transport_usd: o.transport_usd, total_usd: o.total_usd,
+      deposit_received: o.deposit_received, deposit_currency: o.deposit_currency, deposit_usd: o.deposit_usd,
+      balance_due: o.balance_due, balance_due_usd: o.balance_due_usd, balance_paid: o.balance_paid,
+      payment_method: o.payment_method || "", installments: o.installments,
+      priority: o.priority, delivery_date: o.delivery_date || "", notes: o.notes || "",
+      fabrication_details: o.fabrication_details || "", budgeted_details: o.budgeted_details || "",
+      design_observations: o.design_observations || "", important_observations: o.important_observations || "",
+      pool_id: o.pool_id || 0, pool_price: o.pool_price, pool_currency: o.pool_currency,
+      snapshot_name: o.snapshot_name || "", snapshot_phone: o.snapshot_phone || "",
+      snapshot_email: o.snapshot_email || "", snapshot_address: o.snapshot_address || "",
+    });
+    if (o.digital_signature) setDigitalSignature(o.digital_signature);
+    try {
+      const parsed = JSON.parse(o.fabrication_details || "[]");
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        setFabItems(parsed.map((i: any) => ({ _key: fabKey(), concept: i.concept || "", detail: i.detail || "", m2: i.m2 || 0, material: i.material || "" })));
+      }
+    } catch {}
+    try {
+      const parsed = JSON.parse(o.budgeted_details || "[]");
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        setBudgetedItems(parsed.map((i: any) => ({ _key: fabKey(), concept: i.concept || "", detail: i.detail || "", m2: i.m2 || 0, material: i.material || "" })));
+      }
+    } catch {}
+    return o;
+  }), isEdit);
 
   const handleFormChange = (field: string, value: string | number | boolean) => {
     setForm((prev) => ({ ...prev, [field]: value }));

@@ -1,5 +1,5 @@
-import http from "../http";
-import { wrap } from "../wrap";
+import http from "@/api/http";
+import { wrap } from "@/api/wrap";
 
 export const whatsappApi = {
   sendBudget: (id: number, phone?: string) =>

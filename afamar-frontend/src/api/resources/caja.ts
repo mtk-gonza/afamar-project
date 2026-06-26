@@ -1,5 +1,6 @@
-import http from "../http";
-import { wrap } from "../wrap";
+import http from "@/api/http";
+import { wrap } from "@/api/wrap";
+import type { CreateCashMovementInput } from "@/types";
 
 export interface CashMovement {
   id: number;
@@ -36,7 +37,7 @@ export interface DailyCash {
 
 export const cashApi = {
   getDaily: (date: string) => wrap<DailyCash>(() => http.get("/cash/daily", { params: { query_date: date } })),
-  createMovement: (data: any) => wrap<DailyCash>(() => http.post("/cash/movements", data)),
+  createMovement: (data: CreateCashMovementInput) => wrap<DailyCash>(() => http.post("/cash/movements", data)),
   deleteMovement: (id: number) => wrap<DailyCash>(() => http.delete(`/cash/movements/${id}`)),
   updatePreviousBalance: (date: string, previousBalance: number) =>
     wrap<DailyCash>(() => http.put("/cash/previous-balance", { date, previous_balance: previousBalance })),

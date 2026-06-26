@@ -102,8 +102,6 @@ def _remap_reference_table(table: str, mapping: dict[str, str]) -> None:
 
 
 def upgrade() -> None:
-    bind = op.get_bind()
-
     # 1. Remap data in business tables first
     _remap_column("budgets", "status", BUDGET_STATUS_MAP)
     _remap_column("budgets", "payment_method", PAYMENT_METHOD_MAP)

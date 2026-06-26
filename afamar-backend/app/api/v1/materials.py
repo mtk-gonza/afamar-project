@@ -72,7 +72,10 @@ def list_categories(db: Session = Depends(get_db)):
 def create_category(data: MaterialCategoryCreate, db: Session = Depends(get_db)):
     from app.repositories.material import MaterialCategoryRepository
     repo = MaterialCategoryRepository(db)
-    return created(repo.create(data.name))
+    cat = repo.create(data.name)
+    db.commit()
+    db.refresh(cat)
+    return created(cat)
 
 
 @router.delete("/categories/{category_id}", status_code=204)
@@ -83,6 +86,7 @@ def delete_category(category_id: int, db: Session = Depends(get_db)):
     if not cat:
         raise NotFoundError("Category")
     repo.delete(cat)
+    db.commit()
 
 
 # ── Price History ──────────────────────────────────────

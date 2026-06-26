@@ -1,8 +1,8 @@
 import { useRef, useState } from "react";
-import { api } from "../../api/client";
-import { useNotify } from "../../context/NotificationContext";
-import { FormActions } from "../../components/ui/FormActions";
-import styles from "./Measurements.module.css";
+import { api } from "@/api/client";
+import { useNotify } from "@/context/NotificationContext";
+import { FormActions } from "@/components/ui/FormActions";
+import styles from "@/pages/Measurements/Measurements.module.css";
 
 interface MeasurementFormProps {
   editingId: number | null;

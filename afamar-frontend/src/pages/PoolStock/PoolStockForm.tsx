@@ -1,24 +1,23 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { api } from "../../api/client";
-import { FormActions } from "../../components/ui/FormActions";
-import type { PoolStock } from "../../types";
+import { api } from "@/api/client";
+import { FormActions } from "@/components/ui/FormActions";
+import { useGet } from "@/shared/api/hooks";
+import type { PoolStock } from "@/types";
 import styles from "./PoolStockForm.module.css";
 
 export function PoolStockForm() {
   const { id } = useParams();
   const navigate = useNavigate();
   const isEdit = Boolean(id);
+  const numId = id ? Number(id) : null;
   const [form, setForm] = useState({ brand: "", model: "", description: "", material: "", quantity: 0 });
   const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    if (id) {
-      api.getPoolStockById(Number(id)).then((p: PoolStock) =>
-        setForm({ brand: p.brand, model: p.model, description: p.description || "", material: p.material || "", quantity: p.quantity })
-      );
-    }
-  }, [id]);
+  useGet(["poolStock", numId], () => api.getPoolStockById(numId!).then((p: PoolStock) => {
+    setForm({ brand: p.brand, model: p.model, description: p.description || "", material: p.material || "", quantity: p.quantity });
+    return p;
+  }), isEdit);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const value = e.target.name === "quantity" ? Number(e.target.value) : e.target.value;

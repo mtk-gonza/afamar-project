@@ -165,7 +165,10 @@ class WorkOrderService:
         data.pop("client_phone", None)
         data.pop("client_email", None)
         data.pop("client_address", None)
-        return self.repo.create(data)
+        order = self.repo.create(data)
+        self.repo.db.commit()
+        self.repo.db.refresh(order)
+        return order
 
     def create_from_budget(self, budget) -> WorkOrder:
         if budget.status == "CONVERTED_TO_OT":
@@ -173,19 +176,23 @@ class WorkOrderService:
         if budget.status != "APPROVED":
             raise ValueError("Budget must be approved to convert")
 
-        from app.services.budget import BudgetService
+        from app.services.budget_calculator import (
+            apply_surcharge,
+            calculate_material_totals,
+            compute_surcharge,
+            filter_main_materials,
+            parse_materials_data,
+        )
 
-        bsvc = BudgetService(self.repo.db)
-
-        materials_raw = bsvc.parse_materials_data(budget.materials_data)
-        main_materials = bsvc.filter_main_materials(materials_raw)
-        mat_totals = bsvc.calculate_material_totals(main_materials, budget.usd_rate or 1000.0)
+        materials_raw = parse_materials_data(budget.materials_data)
+        main_materials = filter_main_materials(materials_raw)
+        mat_totals = calculate_material_totals(main_materials, budget.usd_rate or 1000.0)
 
         subtotal_ars = mat_totals["ars"] + float(budget.subtotal_materials or 0)
         subtotal_usd = mat_totals["usd"] + float(budget.subtotal_materials or 0) / (budget.usd_rate or 1000.0) if budget.usd_rate else 0
 
-        surcharge_info = bsvc.compute_surcharge(budget.payment_method, budget.installments or 1)
-        surcharge_result = bsvc.apply_surcharge(subtotal_ars, subtotal_usd, surcharge_info["percentage"])
+        surcharge_info = compute_surcharge(budget.payment_method, budget.installments or 1)
+        surcharge_result = apply_surcharge(subtotal_ars, subtotal_usd, surcharge_info["percentage"])
 
         if main_materials:
             material_nombre = main_materials[0].get("nombre") or main_materials[0].get("name") or budget.material or ""
@@ -347,6 +354,8 @@ class WorkOrderService:
                 data.get("payment_method") or order.payment_method,
             )
 
+        self.repo.db.commit()
+        self.repo.db.refresh(result)
         return result
 
     def delete(self, order_id: int) -> bool:
@@ -356,4 +365,5 @@ class WorkOrderService:
         if order.stock_deducted:
             restore_pool_stock(self.repo.db, order.pool_id, order.pools_data, order.number)
         self.repo.delete(order)
+        self.repo.db.commit()
         return True

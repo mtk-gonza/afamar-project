@@ -1,57 +1,40 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { api } from "../../api/client";
-import { useNotify } from "../../context/NotificationContext";
-import { ErrorBlock } from "../../components/ui/ErrorBlock";
-import { FormActions } from "../../components/ui/FormActions";
-import type { Material, MaterialCategory, MaterialColor, MaterialThickness } from "../../types";
+import { api } from "@/api/client";
+import { ErrorBlock } from "@/components/ui/ErrorBlock";
+import { FormActions } from "@/components/ui/FormActions";
+import { useGet, useList } from "@/shared/api/hooks";
+import type { Material, MaterialCategory, MaterialColor, MaterialThickness } from "@/types";
 import styles from "./MaterialForm.module.css";
 
 export function MaterialForm() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const notify = useNotify();
   const isEdit = Boolean(id);
-  const mounted = useRef(true);
+  const numId = id ? Number(id) : null;
   const [categories, setCategories] = useState<MaterialCategory[]>([]);
   const [colors, setColors] = useState<MaterialColor[]>([]);
   const [thicknesses, setThicknesses] = useState<MaterialThickness[]>([]);
   const [form, setForm] = useState({ name: "", category_id: 0, color: "", available_thickness: "", base_price: 0, notes: "" });
-  const [dataLoading, setDataLoading] = useState(true);
-  const [dataError, setDataError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
-  const loadData = useCallback(async () => {
-    setDataLoading(true);
-    setDataError(null);
-    const results = await Promise.allSettled([
-      api.getCategories().then((cats: MaterialCategory[]) => {
-        setCategories(cats);
-        if (!id && cats.length > 0) setForm((f) => ({ ...f, category_id: cats[0].id }));
-      }),
-      api.getColors().then(setColors),
-      api.getThicknesses().then(setThicknesses),
+  const { loading: dataLoading, error: dataError, load: loadData } = useList(["materialFormData"], async () => {
+    const [cats, cols, thicks] = await Promise.all([
+      api.getCategories(),
+      api.getColors(),
+      api.getThicknesses(),
     ]);
-    const errors = results.filter((r) => r.status === "rejected") as PromiseRejectedResult[];
-    if (errors.length > 0) {
-      const msg = "Error al cargar datos del formulario";
-      notify(msg, "error");
-      if (mounted.current) setDataError(msg);
-    }
-    if (mounted.current) setDataLoading(false);
-  }, [id, notify]);
+    setCategories(cats);
+    setColors(cols);
+    setThicknesses(thicks);
+    if (!id && cats.length > 0) setForm((f) => ({ ...f, category_id: cats[0].id }));
+    return [];
+  });
 
-  useEffect(() => {
-    mounted.current = true;
-    loadData();
-    if (id) {
-      api.getMaterial(Number(id)).then((m: Material) => {
-        if (!mounted.current) return;
-        setForm({ name: m.name, category_id: m.category_id, color: m.color || "", available_thickness: m.available_thickness || "", base_price: m.base_price, notes: m.notes || "" });
-      }).catch(() => notify("Error al cargar el material", "error"));
-    }
-    return () => { mounted.current = false; };
-  }, [id, loadData, notify]);
+  useGet(["material", numId], () => api.getMaterial(numId!).then((m: Material) => {
+    setForm({ name: m.name, category_id: m.category_id, color: m.color || "", available_thickness: m.available_thickness || "", base_price: m.base_price, notes: m.notes || "" });
+    return m;
+  }), isEdit);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     setForm({ ...form, [e.target.name]: e.target.value });

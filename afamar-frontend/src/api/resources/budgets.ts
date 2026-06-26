@@ -1,6 +1,6 @@
-import http from "../http";
-import { wrap } from "../wrap";
-import type { Budget } from "../../types";
+import http from "@/api/http";
+import { wrap } from "@/api/wrap";
+import type { Budget, BudgetStatusUpdate } from "@/types";
 
 export const budgetsApi = {
   list: (skip = 0, limit = 100, status?: string, client_id?: number) =>
@@ -9,6 +9,8 @@ export const budgetsApi = {
   search: (q: string) => wrap<Budget[]>(() => http.get("/budgets/search", { params: { q } })),
   create: (data: any) => wrap<Budget>(() => http.post("/budgets", data)),
   update: (id: number, data: any) => wrap<Budget>(() => http.put(`/budgets/${id}`, data)),
+  updateStatus: (id: number, status: BudgetStatusUpdate) =>
+    wrap<Budget>(() => http.put(`/budgets/${id}`, { status })),
   delete: (id: number) => http.delete(`/budgets/${id}`),
   downloadPdf: (id: number) => http.get(`/budgets/${id}/pdf`, { responseType: "blob" }).then((r) => r.data),
   sendEmail: (id: number) => wrap<{ message: string }>(() => http.post(`/budgets/${id}/send-email`)),

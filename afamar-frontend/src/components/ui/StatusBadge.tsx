@@ -1,4 +1,4 @@
-import { t } from "../../utils/translate";
+import { t } from "@/utils/translate";
 import styles from "./StatusBadge.module.css";
 
 interface StatusBadgeProps {

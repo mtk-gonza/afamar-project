@@ -1,43 +1,30 @@
-import { useCallback, useEffect, useState } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { api } from "../../api/client";
-import { useConfirm } from "../../components/ui/useConfirm";
-import { PageHeader } from "../../components/ui/PageHeader";
-import { LoadingSpinner } from "../../components/ui/LoadingSpinner";
-import { ErrorBlock } from "../../components/ui/ErrorBlock";
-import { EmptyState } from "../../components/ui/EmptyState";
-import { TableActions } from "../../components/ui/TableActions";
-import type { Material, MaterialColor, MaterialThickness } from "../../types";
+import { api } from "@/api/client";
+import { useConfirm } from "@/components/ui/useConfirm";
+import { PageHeader } from "@/components/ui/PageHeader";
+import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
+import { ErrorBlock } from "@/components/ui/ErrorBlock";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { TableActions } from "@/components/ui/TableActions";
+import { useList } from "@/shared/api/hooks";
+import type { MaterialColor, MaterialThickness } from "@/types";
 import styles from "./Materials.module.css";
 
 export function Materials() {
   const navigate = useNavigate();
   const { confirm, dialog } = useConfirm();
-  const [items, setItems] = useState<Material[]>([]);
   const [colors, setColors] = useState<MaterialColor[]>([]);
   const [thicknesses, setThicknesses] = useState<MaterialThickness[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [showAdmin, setShowAdmin] = useState(false);
   const [newColor, setNewColor] = useState("");
   const [newThickness, setNewThickness] = useState("");
-
-  const load = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const [mat, col, thick] = await Promise.all([api.getMaterials(), api.getColors(), api.getThicknesses()]);
-      setItems(mat);
-      setColors(col);
-      setThicknesses(thick);
-    } catch {
-      setError("Error al cargar materiales");
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => { load(); }, [load]);
+  const { items, loading, error, load } = useList(["materials"], async () => {
+    const [mat, col, thick] = await Promise.all([api.getMaterials(), api.getColors(), api.getThicknesses()]);
+    setColors(col);
+    setThicknesses(thick);
+    return mat;
+  });
 
   const handleDelete = async (id: number, name: string) => {
     if (!(await confirm(`¿Eliminar material "${name}"?`, "Eliminar", true))) return;

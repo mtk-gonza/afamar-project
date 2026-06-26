@@ -1,13 +1,13 @@
 import { useEffect, useState } from "react";
 import styles from "./Public.module.css";
-import { Container } from "../../components/ui/Container";
-import { Modal } from "../../components/ui/Modal";
-import http from "../../api/http";
-import type { ProductPhoto } from "../../types";
+import { Container } from "@/components/ui/Container";
+import { Modal } from "@/components/ui/Modal";
+import http from "@/api/http";
+import type { ProductPhoto } from "@/types";
 
-import slider1 from "../../assets/slider/1.jpg";
-import slider2 from "../../assets/slider/2.jpg";
-import slider3 from "../../assets/slider/3.jpg";
+import slider1 from "@/assets/slider/1.jpg";
+import slider2 from "@/assets/slider/2.jpg";
+import slider3 from "@/assets/slider/3.jpg";
 
 const slides = [
   {

@@ -20,20 +20,30 @@ class PoolStockService:
         return self.repo.search(term)
 
     def create(self, data: dict) -> PoolStock:
-        return self.repo.create(data)
+        pool = self.repo.create(data)
+        self.repo.db.commit()
+        self.repo.db.refresh(pool)
+        return pool
 
     def update(self, pool_id: int, data: dict) -> Optional[PoolStock]:
         pool = self.repo.get_by_id(pool_id)
         if not pool:
             return None
-        return self.repo.update(pool, data)
+        result = self.repo.update(pool, data)
+        self.repo.db.commit()
+        self.repo.db.refresh(result)
+        return result
 
     def delete(self, pool_id: int) -> bool:
         pool = self.repo.get_by_id(pool_id)
         if not pool:
             return False
         self.repo.delete(pool)
+        self.repo.db.commit()
         return True
 
     def add_movement(self, pool_id: int, data: dict):
-        return self.repo.add_movement(pool_id, data)
+        movement = self.repo.add_movement(pool_id, data)
+        self.repo.db.commit()
+        self.repo.db.refresh(movement)
+        return movement

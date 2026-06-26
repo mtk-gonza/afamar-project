@@ -1,4 +1,4 @@
-import http from "../http";
+import http from "@/api/http";
 
 export const authApi = {
   login: (data: { username: string; password: string }) => http.post("/auth/login", data).then((r) => r.data),

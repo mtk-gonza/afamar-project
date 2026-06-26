@@ -1,7 +1,7 @@
 import { useState } from "react";
-import { api } from "../../api/client";
-import { useNotify } from "../../context/NotificationContext";
-import { t } from "../../utils/translate";
+import { api } from "@/api/client";
+import { useNotify } from "@/context/NotificationContext";
+import { t } from "@/utils/translate";
 import styles from "./DailyCashPage.module.css";
 
 const EXPENSE_TYPES = ["EXPENSE", "BANK_TRANSFER"];

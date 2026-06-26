@@ -1,4 +1,4 @@
-import type { PoolStock, ReferenceItem } from "../../types";
+import type { PoolStock, ReferenceItem } from "@/types";
 import styles from "./BudgetForm.module.css";
 
 interface Props {

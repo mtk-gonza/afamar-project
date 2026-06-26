@@ -1,39 +1,24 @@
-import { useCallback, useEffect, useState } from "react";
+import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { api } from "../../api/client";
-import { useNotify } from "../../context/NotificationContext";
-import { useConfirm } from "../../components/ui/useConfirm";
-import { PageHeader } from "../../components/ui/PageHeader";
-import { LoadingSpinner } from "../../components/ui/LoadingSpinner";
-import { ErrorBlock } from "../../components/ui/ErrorBlock";
-import { EmptyState } from "../../components/ui/EmptyState";
-import { StatusBadge } from "../../components/ui/StatusBadge";
-import { TableActions } from "../../components/ui/TableActions";
-import type { WorkOrder } from "../../types";
+import { api } from "@/api/client";
+import { useNotify } from "@/context/NotificationContext";
+import { useConfirm } from "@/components/ui/useConfirm";
+import { PageHeader } from "@/components/ui/PageHeader";
+import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
+import { ErrorBlock } from "@/components/ui/ErrorBlock";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { StatusBadge } from "@/components/ui/StatusBadge";
+import { TableActions } from "@/components/ui/TableActions";
+import { useList } from "@/shared/api/hooks";
+import type { WorkOrder } from "@/types";
 import styles from "./WorkOrders.module.css";
 
 export function WorkOrders() {
   const navigate = useNavigate();
   const notify = useNotify();
   const { confirm, dialog } = useConfirm();
-  const [items, setItems] = useState<WorkOrder[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const { items, loading, error, load } = useList(["workOrders"], () => api.getWorkOrders());
   const [view, setView] = useState<"table" | "kanban">("table");
-
-  const load = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      setItems(await api.getWorkOrders());
-    } catch {
-      setError("Error al cargar órdenes de trabajo");
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => { load(); }, [load]);
 
   const handleSendWhatsApp = async (o: WorkOrder) => {
     try {

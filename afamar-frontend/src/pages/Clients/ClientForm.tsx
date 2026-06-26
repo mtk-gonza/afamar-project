@@ -1,35 +1,37 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useNavigate, useParams, Link } from "react-router-dom";
-import { api } from "../../api/client";
-import { FormActions } from "../../components/ui/FormActions";
-import { StatusBadge } from "../../components/ui/StatusBadge";
-import type { Client, ClientHistory, ClientHistoryItem } from "../../types";
+import { api } from "@/api/client";
+import { FormActions } from "@/components/ui/FormActions";
+import { StatusBadge } from "@/components/ui/StatusBadge";
+import { useGet } from "@/shared/api/hooks";
+import type { Client, ClientHistoryItem } from "@/types";
 import styles from "./ClientForm.module.css";
 
 export function ClientForm() {
   const { id } = useParams();
   const navigate = useNavigate();
   const isEdit = Boolean(id);
+  const numId = id ? Number(id) : null;
 
   const [form, setForm] = useState({
     name: "", phone: "", email: "", address: "", notes: "",
   });
-  const [history, setHistory] = useState<ClientHistory | null>(null);
   const [loading, setLoading] = useState(false);
-  const [dataLoading, setDataLoading] = useState(true);
 
-  useEffect(() => {
-    if (id) {
-      Promise.all([
-        api.getClient(Number(id)).then((c: Client) =>
-          setForm({ name: c.name, phone: c.phone || "", email: c.email || "", address: c.address || "", notes: c.notes || "" })
-        ),
-        api.getClientHistory(Number(id)).then(setHistory),
-      ]).finally(() => setDataLoading(false));
-    } else {
-      setDataLoading(false);
-    }
-  }, [id]);
+  const { loading: dataLoading } = useGet(
+    ["client", numId],
+    () => api.getClient(numId!).then((c: Client) => {
+      setForm({ name: c.name, phone: c.phone || "", email: c.email || "", address: c.address || "", notes: c.notes || "" });
+      return c;
+    }),
+    isEdit
+  );
+
+  const { data: history } = useGet(
+    ["clientHistory", numId],
+    () => api.getClientHistory(numId!),
+    isEdit
+  );
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setForm({ ...form, [e.target.name]: e.target.value });

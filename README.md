@@ -120,3 +120,13 @@ Ejecutar el seeder:
 ```
 docker exec -it afamar-backend python -m app.utils.seed
 ```
+
+## Comandos adicionales:
+Saber version de DB:
+```bash
+docker exec -it afamar-backend python -m alembic current
+```
+Actualizar version de DB:
+```bash
+docker exec -it afamar-backend python -m alembic upgrade head
+```

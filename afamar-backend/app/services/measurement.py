@@ -17,17 +17,24 @@ class MeasurementService:
         return self.repo.get_by_id(measurement_id)
 
     def create(self, data: dict) -> Measurement:
-        return self.repo.create(data)
+        measurement = self.repo.create(data)
+        self.repo.db.commit()
+        self.repo.db.refresh(measurement)
+        return measurement
 
     def update(self, measurement_id: int, data: dict) -> Optional[Measurement]:
         measurement = self.repo.get_by_id(measurement_id)
         if not measurement:
             return None
-        return self.repo.update(measurement, data)
+        result = self.repo.update(measurement, data)
+        self.repo.db.commit()
+        self.repo.db.refresh(result)
+        return result
 
     def delete(self, measurement_id: int) -> bool:
         measurement = self.repo.get_by_id(measurement_id)
         if not measurement:
             return False
         self.repo.delete(measurement)
+        self.repo.db.commit()
         return True

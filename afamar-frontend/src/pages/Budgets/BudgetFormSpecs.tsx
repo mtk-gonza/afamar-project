@@ -1,4 +1,4 @@
-import type { Material, MaterialColor, MaterialThickness, AppOption } from "../../types";
+import type { Material, MaterialColor, MaterialThickness, AppOption } from "@/types";
 import styles from "./BudgetForm.module.css";
 
 interface Props {

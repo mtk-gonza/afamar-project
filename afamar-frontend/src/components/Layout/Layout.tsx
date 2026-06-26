@@ -1,9 +1,9 @@
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useState } from "react";
 import { NavLink, Outlet } from "react-router-dom";
-import { api } from "../../api/client";
-import { useAuth } from "../../context/AuthContext";
-import { LoadingSpinner } from "../ui/LoadingSpinner";
-import type { SettingsData } from "../../types";
+import { api } from "@/api/client";
+import { useAuth } from "@/context/AuthContext";
+import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
+import { useGet } from "@/shared/api/hooks";
 import styles from "./Layout.module.css";
 
 const navGroups = [
@@ -46,13 +46,9 @@ const navGroups = [
 
 export function Layout() {
   const [collapsed, setCollapsed] = useState(false);
-  const [settings, setSettings] = useState<SettingsData | null>(null);
   const [logoError, setLogoError] = useState(false);
   const { user, logout } = useAuth();
-
-  useEffect(() => {
-    api.getSettings().then(setSettings).catch(() => setSettings(null));
-  }, []);
+  const { data: settings } = useGet(["settings"], () => api.getSettings());
 
   const hasLogo = settings?.company_logo && !logoError;
 

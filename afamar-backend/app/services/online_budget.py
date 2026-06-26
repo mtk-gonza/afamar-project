@@ -30,7 +30,10 @@ class OnlineBudgetService:
     def create(self, data: dict) -> OnlineBudget:
         last_number = self.repo.get_last_number()
         data["number"] = generate_budget_number(last_number)
-        return self.repo.create(data)
+        budget = self.repo.create(data)
+        self.repo.db.commit()
+        self.repo.db.refresh(budget)
+        return budget
 
     def convert_to_work_order(self, budget_id: int):
         online_budget = self.repo.get_by_id(budget_id)
@@ -160,11 +163,15 @@ class OnlineBudgetService:
         budget = self.repo.get_by_id(budget_id)
         if not budget:
             return None
-        return self.repo.update(budget, data)
+        result = self.repo.update(budget, data)
+        self.repo.db.commit()
+        self.repo.db.refresh(result)
+        return result
 
     def delete(self, budget_id: int) -> bool:
         budget = self.repo.get_by_id(budget_id)
         if not budget:
             return False
         self.repo.delete(budget)
+        self.repo.db.commit()
         return True

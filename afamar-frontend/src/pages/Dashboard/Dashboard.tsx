@@ -1,31 +1,14 @@
-import { useCallback, useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { api } from "../../api/client";
-import { LoadingSpinner } from "../../components/ui/LoadingSpinner";
-import { ErrorBlock } from "../../components/ui/ErrorBlock";
-import { ChartBar } from "../../components/ui/ChartBar";
-import type { DashboardStats } from "../../types";
+import { api } from "@/api/client";
+import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
+import { ErrorBlock } from "@/components/ui/ErrorBlock";
+import { ChartBar } from "@/components/ui/ChartBar";
+import { useGet } from "@/shared/api/hooks";
 import styles from "./Dashboard.module.css";
 
 export function Dashboard() {
   const navigate = useNavigate();
-  const [stats, setStats] = useState<DashboardStats | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  const load = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      setStats(await api.getDashboard());
-    } catch {
-      setError("Error al cargar dashboard");
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => { load(); }, [load]);
+  const { data: stats, loading, error, load } = useGet(["dashboard"], () => api.getDashboard());
 
   if (loading) return <div className={styles.dashboard}><LoadingSpinner /></div>;
   if (error) return <div className={styles.dashboard}><ErrorBlock message={error} onRetry={load} /></div>;

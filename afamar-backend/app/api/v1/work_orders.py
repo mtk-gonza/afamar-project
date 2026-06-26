@@ -1,14 +1,16 @@
 import json
+import logging
 from datetime import date
 from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query
 from fastapi.responses import Response
 from sqlalchemy.orm import Session
 
+from app.core.database import SessionLocal
 from app.core.dependencies import get_current_user, get_db
 from app.core.exceptions import NotFoundError
-from app.core.responses import created, success
+from app.core.responses import created, error, success
 from app.models.setting import Setting
 from app.schemas.work_order import WorkOrderCreate, WorkOrderResponse, WorkOrderUpdate
 from app.services.budget import BudgetService
@@ -16,6 +18,27 @@ from app.services.email import send_work_order_email
 from app.services.pdf_html import build_work_order_pdf_data, generate_work_order_pdf
 from app.services.work_order import WorkOrderService
 from app.utils.pagination import paginate
+
+logger = logging.getLogger(__name__)
+
+
+def _email_work_order_background(order_id: int) -> None:
+    db = SessionLocal()
+    try:
+        service = WorkOrderService(db)
+        order = service.get_by_id(order_id)
+        if not order or not order.client or not order.client.email:
+            logger.warning("Order %s or client email not found for background email", order_id)
+            return
+        order_data, client_dict, company, terms = _prepare_work_order_payload(order, db)
+        pdf_data = build_work_order_pdf_data(order_data, client_dict, company, terms)
+        pdf_bytes = generate_work_order_pdf(pdf_data, logo_path=company.get("company_logo")).read()
+        company_name = company.get("company_name") or "AFAMAR"
+        send_work_order_email(order.client.email, pdf_bytes, order.number, company_name=company_name)
+    except Exception:
+        logger.exception("Background email failed for order %s", order_id)
+    finally:
+        db.close()
 
 router = APIRouter(dependencies=[Depends(get_current_user)])
 
@@ -82,7 +105,10 @@ def create_from_budget(budget_id: int, db: Session = Depends(get_db)):
     if not budget:
         raise NotFoundError("Budget")
     service = WorkOrderService(db)
-    return created(service.create_from_budget(budget))
+    try:
+        return created(service.create_from_budget(budget))
+    except ValueError as e:
+        return error(detail=str(e), status_code=400)
 
 
 @router.put("/{order_id}")
@@ -153,7 +179,7 @@ def download_work_order_pdf(order_id: int, db: Session = Depends(get_db)):
 
 
 @router.post("/{order_id}/send-email")
-def email_work_order(order_id: int, db: Session = Depends(get_db)):
+def email_work_order(order_id: int, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
     service = WorkOrderService(db)
     order = service.get_by_id(order_id)
     if not order:
@@ -163,19 +189,8 @@ def email_work_order(order_id: int, db: Session = Depends(get_db)):
     if not client.email:
         raise HTTPException(status_code=400, detail="El cliente no tiene email registrado")
 
-    order_data, client_dict, company, terms = _prepare_work_order_payload(order, db)
-    pdf_data = build_work_order_pdf_data(order_data, client_dict, company, terms)
-    pdf_bytes = generate_work_order_pdf(pdf_data, logo_path=company.get("company_logo")).read()
-    company_name = company.get("company_name") or "AFAMAR"
-
-    try:
-        send_work_order_email(client.email, pdf_bytes, order.number, company_name=company_name)
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error al enviar email: {str(e)}")
-
-    return success({"message": "Email enviado correctamente"})
+    background_tasks.add_task(_email_work_order_background, order_id)
+    return success({"message": "Enviando email en segundo plano"})
 
 
 @router.delete("/{order_id}", status_code=204)

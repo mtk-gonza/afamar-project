@@ -1,6 +1,6 @@
-import http from "../http";
-import { wrap } from "../wrap";
-import type { SettingsData } from "../../types";
+import http from "@/api/http";
+import { wrap } from "@/api/wrap";
+import type { SettingsData } from "@/types";
 
 export const settingsApi = {
   get: () => wrap<SettingsData>(() => http.get("/settings")),

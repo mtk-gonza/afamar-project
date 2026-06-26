@@ -3,7 +3,6 @@ from typing import Any, Optional
 
 from sqlalchemy import func
 from sqlalchemy.orm import Session
-from sqlalchemy.sql import literal_column
 
 from app.models.budget import Budget
 from app.models.client import Client

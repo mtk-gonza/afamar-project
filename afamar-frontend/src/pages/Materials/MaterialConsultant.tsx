@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { api } from "../../api/client";
-import { LoadingSpinner } from "../../components/ui/LoadingSpinner";
-import { useDebounce } from "../../hooks/useDebounce";
-import type { Material } from "../../types";
+import { api } from "@/api/client";
+import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
+import { useDebounce } from "@/hooks/useDebounce";
+import type { Material } from "@/types";
 import styles from "./MaterialConsultant.module.css";
 
 interface SelectedMaterial extends Material {

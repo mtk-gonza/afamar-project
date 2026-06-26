@@ -1,9 +1,10 @@
-import { useCallback, useEffect, useState } from "react";
-import { api } from "../../api/client";
-import { LoadingSpinner } from "../../components/ui/LoadingSpinner";
-import { ChartBar } from "../../components/ui/ChartBar";
-import { PieChart } from "../../components/ui/PieChart";
-import type { WorkOrder } from "../../types";
+import { useState } from "react";
+import { api } from "@/api/client";
+import { useList } from "@/shared/api/hooks";
+import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
+import { ChartBar } from "@/components/ui/ChartBar";
+import { PieChart } from "@/components/ui/PieChart";
+import type { WorkOrder } from "@/types";
 import styles from "./Reports.module.css";
 
 const MONTHS = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
@@ -39,12 +40,10 @@ export function Reports() {
   const [mostUsed, setMostUsed] = useState<{ name: string; usage_count: number }[]>([]);
   const [budgetPie, setBudgetPie] = useState<{ status: string; count: number }[]>([]);
   const [workOrderPie, setWorkOrderPie] = useState<{ status: string; count: number }[]>([]);
-  const [loading, setLoading] = useState(true);
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
 
-  const load = useCallback(async () => {
-    setLoading(true);
+  const { loading } = useList(["reports", selectedStatus, dateFrom, dateTo], async () => {
     await Promise.allSettled([
       api.getBudgetsByStatus(selectedStatus, dateFrom || undefined, dateTo || undefined).then(setBudgetsByStatus),
       api.getWorkOrdersByStatus("WORKSHOP", dateFrom || undefined, dateTo || undefined).then(setOrdersInProduction as any),
@@ -65,10 +64,8 @@ export function Reports() {
     ]);
     setBudgetPie(budgetCounts);
     setWorkOrderPie(workCounts);
-    setLoading(false);
-  }, [selectedStatus, dateFrom, dateTo]);
-
-  useEffect(() => { load(); }, [load]);
+    return [];
+  });
 
   const maxSale = Math.max(...monthlySales.map((s) => s.total), 1);
 

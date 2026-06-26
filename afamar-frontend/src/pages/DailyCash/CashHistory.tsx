@@ -1,7 +1,8 @@
-import { useCallback, useEffect, useState } from "react";
+import { useState } from "react";
 import { ArrowDownCircle, ArrowUpCircle, Banknote, ChevronDown, ChevronUp, Eye, Filter } from "lucide-react";
-import { api } from "../../api/client";
-import type { DailyCash } from "../../api/resources/caja";
+import { api } from "@/api/client";
+import { useList } from "@/shared/api/hooks";
+import type { DailyCash } from "@/types";
 import styles from "./DailyCashPage.module.css";
 
 function formatCurrency(n: number): string {
@@ -9,43 +10,28 @@ function formatCurrency(n: number): string {
 }
 
 export function CashHistory() {
-  const [cashes, setCashes] = useState<DailyCash[]>([]);
-  const [loading, setLoading] = useState(true);
   const [expandedId, setExpandedId] = useState<number | null>(null);
   const [monthFilter, setMonthFilter] = useState(() => {
     const d = new Date();
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
   });
   const [accumulatedBalances, setAccumulatedBalances] = useState<Record<string, number>>({});
-
-  const loadHistory = useCallback(async () => {
-    setLoading(true);
-    try {
-      const data = await api.getCashHistory();
-      let list = (data as unknown as DailyCash[]) || [];
-
-      if (monthFilter) {
-        list = list.filter((c) => c.date?.startsWith(monthFilter));
-      }
-
-      list.sort((a, b) => b.date.localeCompare(a.date));
-      setCashes(list);
-
-      const acums: Record<string, number> = {};
-      let running = 0;
-      for (const c of [...list].reverse()) {
-        running += (c.current_balance || 0);
-        acums[c.date] = running;
-      }
-      setAccumulatedBalances(acums);
-    } catch {
-      setCashes([]);
-    } finally {
-      setLoading(false);
+  const { items: cashes, loading } = useList(["cashHistory", monthFilter], async () => {
+    const data = await api.getCashHistory();
+    let list = (data as unknown as DailyCash[]) || [];
+    if (monthFilter) {
+      list = list.filter((c) => c.date?.startsWith(monthFilter));
     }
-  }, [monthFilter]);
-
-  useEffect(() => { loadHistory(); }, [loadHistory]);
+    list.sort((a, b) => b.date.localeCompare(a.date));
+    const acums: Record<string, number> = {};
+    let running = 0;
+    for (const c of [...list].reverse()) {
+      running += (c.current_balance || 0);
+      acums[c.date] = running;
+    }
+    setAccumulatedBalances(acums);
+    return list;
+  });
 
   return (
     <div>

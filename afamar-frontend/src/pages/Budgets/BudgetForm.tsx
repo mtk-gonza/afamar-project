@@ -1,11 +1,12 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { api } from "../../api/client";
-import { useNotify } from "../../context/NotificationContext";
-import { useReferences } from "../../context/ReferencesContext";
-import { ErrorBlock } from "../../components/ui/ErrorBlock";
-import { FormActions } from "../../components/ui/FormActions";
-import type { Budget, Client, Material, MaterialColor, MaterialThickness, AppOption, PoolStock } from "../../types";
+import { api } from "@/api/client";
+import { useNotify } from "@/context/NotificationContext";
+import { useReferences } from "@/context/ReferencesContext";
+import { ErrorBlock } from "@/components/ui/ErrorBlock";
+import { FormActions } from "@/components/ui/FormActions";
+import { useList, useGet } from "@/shared/api/hooks";
+import type { Budget, Client, Material, MaterialColor, MaterialThickness, AppOption, PoolStock } from "@/types";
 import type { ItemRow } from "./BudgetFormItems";
 import type { AdicionalRow } from "./BudgetFormAdicionales";
 import { BudgetFormClient } from "./BudgetFormClient";
@@ -26,8 +27,8 @@ export function BudgetForm() {
   const navigate = useNavigate();
   const notify = useNotify();
   const isEdit = Boolean(id);
+  const numId = id ? Number(id) : null;
   const { paymentMethods } = useReferences();
-  const mounted = useRef(true);
 
   const [clients, setClients] = useState<Client[]>([]);
   const [materials, setMaterials] = useState<Material[]>([]);
@@ -65,8 +66,6 @@ export function BudgetForm() {
   const [discountType, setDiscountType] = useState("porcentaje");
   const [cardSurchargePct, setCardSurchargePct] = useState(0);
   const [fabTab, setFabTab] = useState("ZÓCALO");
-  const [dataLoading, setDataLoading] = useState(true);
-  const [dataError, setDataError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
   const subtotal = useMemo(() => items.reduce((s, i) => s + i.total, 0), [items]);
@@ -103,64 +102,58 @@ export function BudgetForm() {
     }
   };
 
-  const loadData = useCallback(async () => {
-    setDataLoading(true);
-    setDataError(null);
-    const results = await Promise.allSettled([
-      api.getClients().then(setClients),
-      api.getMaterials().then(setMaterials),
-      api.getColors().then(setColors),
-      api.getThicknesses().then(setThicknesses),
-      api.getOptions("finish_type").then(setFinishTypes),
-      api.getOptions("front_type").then(setFrontTypes),
-      api.getOptions("bacha_type").then(setBachaTypes),
-      api.getOptions("anafe_type").then(setAnafeTypes),
-      api.getPoolStock().then(setPoolStock),
+  const { loading: dataLoading, error: dataError, load: loadData } = useList(["budgetFormData"], async () => {
+    const [cl, mat, col, thick, finish, front, bacha, anafe, ps] = await Promise.all([
+      api.getClients(),
+      api.getMaterials(),
+      api.getColors(),
+      api.getThicknesses(),
+      api.getOptions("finish_type"),
+      api.getOptions("front_type"),
+      api.getOptions("bacha_type"),
+      api.getOptions("anafe_type"),
+      api.getPoolStock(),
     ]);
-    const errors = results.filter((r) => r.status === "rejected") as PromiseRejectedResult[];
-    if (errors.length > 0) {
-      const msg = "Error al cargar datos del formulario";
-      notify(msg, "error");
-      if (mounted.current) setDataError(msg);
-    }
-    if (mounted.current) setDataLoading(false);
-  }, [notify]);
-
-  useEffect(() => {
-    mounted.current = true;
-    loadData();
+    setClients(cl);
+    setMaterials(mat);
+    setColors(col);
+    setThicknesses(thick);
+    setFinishTypes(finish);
+    setFrontTypes(front);
+    setBachaTypes(bacha);
+    setAnafeTypes(anafe);
+    setPoolStock(ps);
     if (!isEdit) {
-      api.getNextBudgetNumber().then((res) => { if (mounted.current) setNextNumber(res.number); }).catch(() => {});
+      api.getNextBudgetNumber().then((res) => setNextNumber(res.number)).catch(() => {});
     }
-    if (id) {
-      api.getBudget(Number(id)).then((b: Budget) => {
-        if (!mounted.current) return;
-        setClientId(b.client_id);
-        setClientName(b.snapshot_name || "");
-        setClientPhone(b.snapshot_phone || "");
-        setClientEmail(b.snapshot_email || "");
-        setClientAddress(b.snapshot_address || "");
-        setSpecs({ material: b.material || "", color: b.color || "", thickness: b.thickness || "", front: b.front || "", finish: b.finish || "", bacha: b.bacha || "", anafe: b.anafe || "", perforations: b.perforations || "" });
-        setItems(b.items.map((i) => ({ _key: key(), sector: i.sector || "", description: i.description, quantity: i.quantity, unit_price: i.unit_price, total: i.total, length: i.length, width: i.width, m2: i.m2, price_m2: i.price_m2 })));
-        setAdicionales((b.adicionales || []).map((a) => ({ _key: key(), concept: a.concept || "", detail: a.detail || "", quantity: a.quantity, unit_price: a.unit_price, total: a.total })));
-        setCurrency(b.currency);
-        setUsdRate(b.usd_rate);
-        setDiscountPct(b.discount);
-        setTransport(b.transport);
-        setInstallation(b.installation);
-        setDepositReceived(b.deposit_received);
-        setDepositCurrency(b.deposit_currency);
-        setInstallments(b.installments);
-        setPoolId(b.pool_id || 0);
-        setPoolPrice(b.pool_price);
-        setPoolCurrency(b.pool_currency);
-        setObservations({ design: b.design_observations || "", important: b.important_observations || "", notes: b.notes || "", fabrication: b.fabrication_details || "" });
-        setSnapshot({ name: b.snapshot_name || "", phone: b.snapshot_phone || "", email: b.snapshot_email || "", address: b.snapshot_address || "" });
-        setPayment({ payment_method: b.payment_method || "", validity_days: b.validity_days, estimated_delivery: b.estimated_delivery || "", estimated_date: b.estimated_date || "" });
-      }).catch(() => notify("Error al cargar el presupuesto", "error"));
-    }
-    return () => { mounted.current = false; };
-  }, [id, loadData, notify]);
+    return [];
+  });
+
+  useGet(["budget", numId], () => api.getBudget(numId!).then((b: Budget) => {
+    setClientId(b.client_id);
+    setClientName(b.snapshot_name || "");
+    setClientPhone(b.snapshot_phone || "");
+    setClientEmail(b.snapshot_email || "");
+    setClientAddress(b.snapshot_address || "");
+    setSpecs({ material: b.material || "", color: b.color || "", thickness: b.thickness || "", front: b.front || "", finish: b.finish || "", bacha: b.bacha || "", anafe: b.anafe || "", perforations: b.perforations || "" });
+    setItems(b.items.map((i) => ({ _key: key(), sector: i.sector || "", description: i.description, quantity: i.quantity, unit_price: i.unit_price, total: i.total, length: i.length, width: i.width, m2: i.m2, price_m2: i.price_m2 })));
+    setAdicionales((b.adicionales || []).map((a) => ({ _key: key(), concept: a.concept || "", detail: a.detail || "", quantity: a.quantity, unit_price: a.unit_price, total: a.total })));
+    setCurrency(b.currency);
+    setUsdRate(b.usd_rate);
+    setDiscountPct(b.discount);
+    setTransport(b.transport);
+    setInstallation(b.installation);
+    setDepositReceived(b.deposit_received);
+    setDepositCurrency(b.deposit_currency);
+    setInstallments(b.installments);
+    setPoolId(b.pool_id || 0);
+    setPoolPrice(b.pool_price);
+    setPoolCurrency(b.pool_currency);
+    setObservations({ design: b.design_observations || "", important: b.important_observations || "", notes: b.notes || "", fabrication: b.fabrication_details || "" });
+    setSnapshot({ name: b.snapshot_name || "", phone: b.snapshot_phone || "", email: b.snapshot_email || "", address: b.snapshot_address || "" });
+    setPayment({ payment_method: b.payment_method || "", validity_days: b.validity_days, estimated_delivery: b.estimated_delivery || "", estimated_date: b.estimated_date || "" });
+    return b;
+  }), isEdit);
 
   const updateItem = (idx: number, field: keyof Omit<ItemRow, "_key">, value: string | number) => {
     setItems((prev) => {

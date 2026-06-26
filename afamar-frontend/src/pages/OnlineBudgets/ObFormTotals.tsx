@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import { FormActions } from "../../components/ui/FormActions";
+import { FormActions } from "@/components/ui/FormActions";
 import styles from "./OnlineBudgets.module.css";
 
 interface Props {

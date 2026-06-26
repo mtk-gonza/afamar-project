@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback, useEffect } from "react";
-import type { SketchElement, SketchPage } from "../../types";
+import type { SketchElement, SketchPage } from "@/types";
 import styles from "./SketchEditor.module.css";
 
 type ToolType = "select" | "draw" | "line" | "rect" | "circle" | "bacha" | "anafe" | "hole" | "text" | "measure";

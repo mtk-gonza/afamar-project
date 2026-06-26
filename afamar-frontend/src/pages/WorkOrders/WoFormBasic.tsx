@@ -1,6 +1,6 @@
 import { useMemo } from "react";
-import type { Client } from "../../types";
-import { useReferences } from "../../context/ReferencesContext";
+import type { Client } from "@/types";
+import { useReferences } from "@/context/ReferencesContext";
 import styles from "./WorkOrderForm.module.css";
 
 interface Props {

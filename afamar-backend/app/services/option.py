@@ -19,7 +19,10 @@ class AppOptionService:
         return self.repo.get_by_id(option_id)
 
     def create(self, data: dict[str, Any]):
-        return self.repo.create(data, commit=True)
+        option = self.repo.create(data)
+        self.repo.db.commit()
+        self.repo.db.refresh(option)
+        return option
 
     def delete(self, option_id: int) -> bool:
         opt = self.repo.get_by_id(option_id)

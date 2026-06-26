@@ -1,4 +1,4 @@
-import type { Client } from "../../types";
+import type { Client } from "@/types";
 import styles from "./BudgetForm.module.css";
 
 interface Props {

@@ -1,13 +1,13 @@
-import http from "../http";
-import { wrap } from "../wrap";
-import type { Material, MaterialCategory, MaterialColor, MaterialThickness, PriceHistory } from "../../types";
+import http from "@/api/http";
+import { wrap } from "@/api/wrap";
+import type { CreateMaterialInput, Material, MaterialCategory, MaterialColor, MaterialThickness, PriceHistory } from "@/types";
 
 export const materialsApi = {
   list: (skip = 0, limit = 100, category_id?: number) =>
     wrap<Material[]>(() => http.get("/materials", { params: { skip, limit, category_id } })),
   get: (id: number) => wrap<Material>(() => http.get(`/materials/${id}`)),
-  create: (data: any) => wrap<Material>(() => http.post("/materials", data)),
-  update: (id: number, data: any) => wrap<Material>(() => http.put(`/materials/${id}`, data)),
+  create: (data: CreateMaterialInput) => wrap<Material>(() => http.post("/materials", data)),
+  update: (id: number, data: Partial<CreateMaterialInput>) => wrap<Material>(() => http.put(`/materials/${id}`, data)),
   delete: (id: number) => http.delete(`/materials/${id}`),
   priceHistory: (materialId: number) => wrap<PriceHistory[]>(() => http.get(`/materials/${materialId}/price-history`)),
   categories: {

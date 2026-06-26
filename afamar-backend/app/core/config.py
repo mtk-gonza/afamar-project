@@ -40,7 +40,7 @@ class Settings(BaseSettings):
     WHATSAPP_API_KEY: str = ""
 
     # JWT
-    SECRET_KEY: str = "afamar-secret-key-change-in-production"
+    SECRET_KEY: str
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_HOURS: int = 8
     CORS_ALLOW_ORIGINS: str = "*"
@@ -51,6 +51,9 @@ class Settings(BaseSettings):
     # Logging
     LOG_LEVEL: str = "INFO"
     LOG_FORMAT: str = "text"
+
+    # Rate limiting
+    RATE_LIMIT_ENABLED: bool = True
 
     @property
     def cors_origins_list(self) -> list[str]:

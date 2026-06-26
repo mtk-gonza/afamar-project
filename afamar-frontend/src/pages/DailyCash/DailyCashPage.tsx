@@ -1,10 +1,11 @@
-import { useCallback, useEffect, useState } from "react";
+import { useState } from "react";
 import { ArrowDownCircle, ArrowUpCircle, Banknote, Lock, Plus, Printer, Trash2, Wallet } from "lucide-react";
-import { api } from "../../api/client";
-import { useNotify } from "../../context/NotificationContext";
+import { api } from "@/api/client";
+import { useNotify } from "@/context/NotificationContext";
+import { useGet } from "@/shared/api/hooks";
 import { CashIncomeFormModal } from "./CashIncomeFormModal";
 import { CashExpenseFormModal } from "./CashExpenseFormModal";
-import type { CashMovement, DailyCash } from "../../api/resources/caja";
+import type { CashMovement, DailyCash } from "@/types";
 import styles from "./DailyCashPage.module.css";
 
 function formatCurrency(n: number): string {
@@ -17,7 +18,6 @@ export function DailyCashPage() {
   const [date, setDate] = useState(today);
   const [previousBalance, setPreviousBalance] = useState(0);
   const [movements, setMovements] = useState<CashMovement[]>([]);
-  const [loading, setLoading] = useState(true);
   const [isClosed, setIsClosed] = useState(false);
   const [editingBalance, setEditingBalance] = useState(false);
 
@@ -27,8 +27,7 @@ export function DailyCashPage() {
   const [showClose, setShowClose] = useState(false);
   const [closeNotes, setCloseNotes] = useState("");
 
-  const loadCash = useCallback(async () => {
-    setLoading(true);
+  const { loading, load: loadCash } = useGet(["dailyCash", date], async () => {
     try {
       const res = await api.getDailyCash(date);
       if (res) {
@@ -54,12 +53,9 @@ export function DailyCashPage() {
     } catch {
       setMovements([]);
       setIsClosed(false);
-    } finally {
-      setLoading(false);
     }
-  }, [date]);
-
-  useEffect(() => { loadCash(); }, [loadCash]);
+    return null;
+  });
 
   const handleSavePreviousBalance = async () => {
     try {

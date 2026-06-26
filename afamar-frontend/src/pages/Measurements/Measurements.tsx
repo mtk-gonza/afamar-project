@@ -1,16 +1,16 @@
 import { useState } from "react";
-import { api } from "../../api/client";
-import { useNotify } from "../../context/NotificationContext";
-import { useConfirm } from "../../components/ui/useConfirm";
-import { PageHeader } from "../../components/ui/PageHeader";
-import { TableActions } from "../../components/ui/TableActions";
-import { ListPage } from "../../components/ui/ListPage";
-import { useApiList } from "../../hooks/useApiList";
-import { formatDate } from "../../utils/formatCurrency";
-import { MEASUREMENT_STATUSES } from "../../constants";
-import { t } from "../../utils/translate";
+import { api } from "@/api/client";
+import { useNotify } from "@/context/NotificationContext";
+import { useConfirm } from "@/components/ui/useConfirm";
+import { PageHeader } from "@/components/ui/PageHeader";
+import { TableActions } from "@/components/ui/TableActions";
+import { ListPage } from "@/components/ui/ListPage";
+import { useList } from "@/shared/api/hooks";
+import { formatDate } from "@/utils/formatCurrency";
+import { MEASUREMENT_STATUSES } from "@/constants";
+import { t } from "@/utils/translate";
 import { MeasurementForm } from "./MeasurementForm";
-import type { Measurement } from "../../types";
+import type { Measurement } from "@/types";
 import styles from "./Measurements.module.css";
 
 function photoCount(m: Measurement): number {
@@ -26,7 +26,7 @@ function photoCount(m: Measurement): number {
 export function Measurements() {
   const notify = useNotify();
   const { confirm, dialog } = useConfirm();
-  const { items, loading, error, load } = useApiList(() => api.getMeasurements(), "Error al cargar mediciones");
+  const { items, loading, error, load } = useList(["measurements"], () => api.getMeasurements());
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
 

@@ -380,11 +380,10 @@ def generate_work_order_pdf(data: dict, logo_path: Optional[str] = None) -> Byte
 
 
 def build_budget_pdf_data(budget_data: dict, client_dict: dict, company: dict, terms: dict) -> dict:
-    from app.services.budget import BudgetService
-    bsvc = BudgetService.__new__(BudgetService)
+    from app.services.budget_calculator import filter_main_materials, parse_materials_data
 
-    materiales_raw = bsvc.parse_materials_data(budget_data.get("materials_data"))
-    main_materials = bsvc.filter_main_materials(materiales_raw)
+    materiales_raw = parse_materials_data(budget_data.get("materials_data"))
+    main_materials = filter_main_materials(materiales_raw)
     alternatives = [m for m in materiales_raw if m.get("es_alternativa")]
 
     items_list = []
@@ -437,7 +436,7 @@ def build_budget_pdf_data(budget_data: dict, client_dict: dict, company: dict, t
         materiales_pdf.append(m)
 
     piletas_list = []
-    for pt in (bsvc.parse_materials_data(budget_data.get("pools_data")) or []):
+    for pt in (parse_materials_data(budget_data.get("pools_data")) or []):
         piletas_list.append({
             "marca": pt.get("marca") or pt.get("brand", ""),
             "modelo": pt.get("modelo") or pt.get("model", ""),
@@ -487,11 +486,10 @@ def build_budget_pdf_data(budget_data: dict, client_dict: dict, company: dict, t
 
 
 def build_work_order_pdf_data(order_data: dict, client_dict: dict, company: dict, terms: dict) -> dict:
-    from app.services.budget import BudgetService
-    bsvc = BudgetService.__new__(BudgetService)
+    from app.services.budget_calculator import filter_main_materials, parse_materials_data
 
-    materiales_raw = bsvc.parse_materials_data(order_data.get("materials_data"))
-    main_materials = bsvc.filter_main_materials(materiales_raw)
+    materiales_raw = parse_materials_data(order_data.get("materials_data"))
+    main_materials = filter_main_materials(materiales_raw)
 
     items_list = []
     for it in (order_data.get("items") or []):
@@ -530,7 +528,7 @@ def build_work_order_pdf_data(order_data: dict, client_dict: dict, company: dict
         })
 
     piletas_list = []
-    for pt in (bsvc.parse_materials_data(order_data.get("pools_data")) or []):
+    for pt in (parse_materials_data(order_data.get("pools_data")) or []):
         piletas_list.append({
             "marca": pt.get("marca") or pt.get("brand", ""),
             "modelo": pt.get("modelo") or pt.get("model", ""),

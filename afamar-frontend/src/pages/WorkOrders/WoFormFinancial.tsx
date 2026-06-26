@@ -1,4 +1,4 @@
-import type { PoolStock } from "../../types";
+import type { PoolStock } from "@/types";
 import styles from "./WorkOrderForm.module.css";
 
 interface Props {

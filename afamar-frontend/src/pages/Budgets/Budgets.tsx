@@ -1,33 +1,33 @@
 import { useNavigate } from "react-router-dom";
-import { api } from "../../api/client";
-import { useNotify } from "../../context/NotificationContext";
-import { useConfirm } from "../../components/ui/useConfirm";
-import { PageHeader } from "../../components/ui/PageHeader";
-import { StatusBadge } from "../../components/ui/StatusBadge";
-import { TableActions } from "../../components/ui/TableActions";
-import { ListPage } from "../../components/ui/ListPage";
-import { useApiList } from "../../hooks/useApiList";
-import { formatARS, formatUSD, formatBalance, formatDate } from "../../utils/formatCurrency";
-import { downloadPdf } from "../../utils/downloadPdf";
-import type { Budget } from "../../types";
+import { api } from "@/api/client";
+import { useNotify } from "@/context/NotificationContext";
+import { useConfirm } from "@/components/ui/useConfirm";
+import { PageHeader } from "@/components/ui/PageHeader";
+import { ListPage } from "@/components/ui/ListPage";
+import { StatusBadge } from "@/components/ui/StatusBadge";
+import { TableActions } from "@/components/ui/TableActions";
+import { useList } from "@/shared/api/hooks";
+import { downloadPdf } from "@/utils/downloadPdf";
+import { formatARS, formatUSD, formatBalance, formatDate } from "@/utils/formatCurrency";
+import type { Budget } from "@/types";
 import styles from "./Budgets.module.css";
 
 export function Budgets() {
   const navigate = useNavigate();
   const notify = useNotify();
   const { confirm, dialog } = useConfirm();
-  const { items, loading, error, load } = useApiList(() => api.getBudgets(), "Error al cargar presupuestos");
+  const { items, loading, error, load } = useList(["budgets"], () => api.getBudgets());
 
   const handleApproval = async (b: Budget) => {
     if (b.status === "PENDING") {
-      await api.updateBudget(b.id, { status: "APPROVED" });
+      await api.updateBudgetStatus(b.id, "APPROVED");
       if (await confirm("¿Convertir a Orden de Trabajo?")) {
         await api.createFromBudget(b.id);
       }
     } else if (b.status === "APPROVED") {
-      await api.updateBudget(b.id, { status: "REJECTED" });
+      await api.updateBudgetStatus(b.id, "REJECTED");
     } else {
-      await api.updateBudget(b.id, { status: "PENDING" });
+      await api.updateBudgetStatus(b.id, "PENDING");
     }
     load();
   };

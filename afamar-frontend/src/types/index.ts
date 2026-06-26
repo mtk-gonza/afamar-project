@@ -399,3 +399,107 @@ export interface ProductPhoto {
   created_at: string;
   updated_at: string;
 }
+
+/* ── Create/Update input types ── */
+
+export interface CreateClientInput {
+  name: string;
+  phone?: string;
+  email?: string;
+  address?: string;
+  notes?: string;
+}
+
+export interface CreateMaterialInput {
+  name: string;
+  category_id: number;
+  color?: string;
+  available_thickness?: string;
+  base_price?: number;
+  notes?: string;
+}
+
+export interface CreatePoolStockInput {
+  brand: string;
+  model: string;
+  description?: string;
+  material?: string;
+  quantity: number;
+}
+
+export interface CreateMeasurementInput {
+  client_name: string;
+  client_phone?: string;
+  client_address?: string;
+  scheduled_date: string;
+  scheduled_time: string;
+  notes?: string;
+  photos_data?: string | null;
+}
+
+export interface CreateOnlineBudgetInput {
+  client_name: string;
+  work_type: string;
+  date: string;
+  usd_rate: number;
+  items_data: string;
+  total_net_ars: number;
+  total_net_usd: number;
+  total_consolidated: number;
+  pool_id?: number | null;
+  pool_price?: number;
+}
+
+export interface CreateCashMovementInput {
+  date: string;
+  type: "INCOME" | "EXPENSE";
+  amount: number;
+  description: string;
+  payment_method?: string;
+  folder_status?: string;
+  order_id?: number | null;
+  order_number?: string | null;
+  order_total?: number | null;
+  client_name?: string | null;
+  expense_type?: string;
+}
+
+export interface CashMovement {
+  id: number;
+  date: string;
+  type: "INCOME" | "EXPENSE";
+  amount: number;
+  description: string | null;
+  payment_method: string | null;
+  folder_status: string | null;
+  order_id: number | null;
+  order_number: string | null;
+  order_total: number | null;
+  client_name: string | null;
+  expense_type: string | null;
+  created_at: string;
+  remaining_balance: number | null;
+}
+
+export interface DailyCash {
+  id: number;
+  date: string;
+  previous_balance: number;
+  total_income: number;
+  total_expenses: number;
+  total_sum: number;
+  current_balance: number;
+  real_cash: number;
+  is_closed: boolean;
+  notes: string | null;
+  movements: CashMovement[];
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CreateProductPhotoData {
+  title?: string;
+  description?: string;
+}
+
+export type BudgetStatusUpdate = "APPROVED" | "REJECTED" | "PENDING" | "CONVERTED_TO_OT";

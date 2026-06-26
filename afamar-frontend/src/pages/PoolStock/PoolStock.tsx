@@ -1,43 +1,29 @@
-import { useCallback, useEffect, useState } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { api } from "../../api/client";
-import { useConfirm } from "../../components/ui/useConfirm";
-import { PageHeader } from "../../components/ui/PageHeader";
-import { LoadingSpinner } from "../../components/ui/LoadingSpinner";
-import { ErrorBlock } from "../../components/ui/ErrorBlock";
-import { EmptyState } from "../../components/ui/EmptyState";
-import { SearchInput } from "../../components/ui/SearchInput";
-import { TableActions } from "../../components/ui/TableActions";
-import type { PoolStock as PoolStockType } from "../../types";
+import { api } from "@/api/client";
+import { useConfirm } from "@/components/ui/useConfirm";
+import { PageHeader } from "@/components/ui/PageHeader";
+import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
+import { ErrorBlock } from "@/components/ui/ErrorBlock";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { SearchInput } from "@/components/ui/SearchInput";
+import { TableActions } from "@/components/ui/TableActions";
+import { useList } from "@/shared/api/hooks";
 import styles from "./PoolStock.module.css";
 
 export function PoolStock() {
   const navigate = useNavigate();
   const { confirm, dialog } = useConfirm();
-  const [items, setItems] = useState<PoolStockType[]>([]);
   const [search, setSearch] = useState("");
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  const load = useCallback(async (q = "") => {
-    setLoading(true);
-    setError(null);
-    try {
-      const result = q ? await api.searchPoolStock(q) : await api.getPoolStock();
-      setItems(result);
-    } catch {
-      setError("Error al cargar stock");
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => { load(search); }, [search, load]);
+  const { items, loading, error, load } = useList(
+    ["poolStock", search],
+    () => search ? api.searchPoolStock(search) : api.getPoolStock()
+  );
 
   const handleDelete = async (id: number, brand: string) => {
     if (!(await confirm(`¿Eliminar "${brand}" del stock?`, "Eliminar", true))) return;
     await api.deletePoolStock(id);
-    load(search);
+    load();
   };
 
   return (
@@ -47,7 +33,7 @@ export function PoolStock() {
       </PageHeader>
 
       {loading && <LoadingSpinner />}
-      {error && <ErrorBlock message={error} onRetry={() => load(search)} />}
+      {error && <ErrorBlock message={error} onRetry={() => load()} />}
       {!loading && !error && items.length === 0 && (
         <EmptyState message={search ? "Sin resultados." : "No hay stock aún."} />
       )}

@@ -1,43 +1,29 @@
-import { useCallback, useEffect, useState } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { api } from "../../api/client";
-import { useConfirm } from "../../components/ui/useConfirm";
-import { PageHeader } from "../../components/ui/PageHeader";
-import { LoadingSpinner } from "../../components/ui/LoadingSpinner";
-import { ErrorBlock } from "../../components/ui/ErrorBlock";
-import { EmptyState } from "../../components/ui/EmptyState";
-import { SearchInput } from "../../components/ui/SearchInput";
-import { TableActions } from "../../components/ui/TableActions";
-import type { Client } from "../../types";
+import { api } from "@/api/client";
+import { useConfirm } from "@/components/ui/useConfirm";
+import { PageHeader } from "@/components/ui/PageHeader";
+import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
+import { ErrorBlock } from "@/components/ui/ErrorBlock";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { SearchInput } from "@/components/ui/SearchInput";
+import { TableActions } from "@/components/ui/TableActions";
+import { useList } from "@/shared/api/hooks";
 import styles from "./Clients.module.css";
 
 export function Clients() {
   const navigate = useNavigate();
   const { confirm, dialog } = useConfirm();
-  const [items, setItems] = useState<Client[]>([]);
   const [search, setSearch] = useState("");
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  const load = useCallback(async (q = "") => {
-    setLoading(true);
-    setError(null);
-    try {
-      const result = q ? await api.searchClients(q) : await api.getClients();
-      setItems(result);
-    } catch {
-      setError("Error al cargar clientes");
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => { load(search); }, [search, load]);
+  const { items, loading, error, load } = useList(
+    ["clients", search],
+    () => search ? api.searchClients(search) : api.getClients()
+  );
 
   const handleDelete = async (id: number, name: string) => {
     if (!(await confirm(`¿Eliminar cliente "${name}"?`, "Eliminar", true))) return;
     await api.deleteClient(id);
-    load(search);
+    load();
   };
 
   return (
@@ -47,7 +33,7 @@ export function Clients() {
       </PageHeader>
 
       {loading && <LoadingSpinner />}
-      {error && <ErrorBlock message={error} onRetry={() => load(search)} />}
+      {error && <ErrorBlock message={error} onRetry={() => load()} />}
       {!loading && !error && items.length === 0 && (
         <EmptyState message={search ? "Sin resultados." : "No hay clientes aún."} />
       )}

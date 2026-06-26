@@ -1,18 +1,16 @@
-import { useCallback, useEffect, useRef, useState } from "react";
-import { api } from "../../api/client";
-import { useConfirm } from "../../components/ui/useConfirm";
-import { Modal } from "../../components/ui/Modal";
-import { useNotify } from "../../context/NotificationContext";
-import type { ProductPhoto } from "../../types";
+import { useRef, useState } from "react";
+import { api } from "@/api/client";
+import { useConfirm } from "@/components/ui/useConfirm";
+import { Modal } from "@/components/ui/Modal";
+import { useNotify } from "@/context/NotificationContext";
+import { useList } from "@/shared/api/hooks";
+import type { ProductPhoto } from "@/types";
 import styles from "./ProductPhotos.module.css";
 
 const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp"];
 const MAX_SIZE = 30 * 1024 * 1024;
 
 export function ProductPhotos() {
-  const [photos, setPhotos] = useState<ProductPhoto[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -24,14 +22,7 @@ export function ProductPhotos() {
   const fileRef = useRef<HTMLInputElement>(null);
   const { confirm, dialog } = useConfirm();
   const notify = useNotify();
-
-  const load = useCallback(() => {
-    setLoading(true);
-    setError(null);
-    api.getLatestProductPhotos(12).then(setPhotos).catch(() => setError("Error al cargar fotos")).finally(() => setLoading(false));
-  }, []);
-
-  useEffect(() => { load(); }, [load]);
+  const { items: photos, loading, error, load } = useList(["productPhotos"], () => api.getLatestProductPhotos(12));
 
   const validateFile = (file: File): string | null => {
     if (!ALLOWED_TYPES.includes(file.type)) return "Formato no permitido. Usá JPG, PNG o WebP.";

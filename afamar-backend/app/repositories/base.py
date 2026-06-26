@@ -11,23 +11,20 @@ class BaseRepository:
     def __init__(self, db: Session):
         self.db = db
 
-    def add(self, instance: Base, commit: bool = False) -> Base:
+    def add(self, instance: Base) -> Base:
         self.db.add(instance)
-        if commit:
-            self.db.commit()
         self.db.flush()
         self.db.refresh(instance)
         return instance
 
     def save(self, instance: Base) -> Base:
         self.db.add(instance)
-        self.db.commit()
+        self.db.flush()
         self.db.refresh(instance)
         return instance
 
     def delete(self, instance: Base) -> None:
         self.db.delete(instance)
-        self.db.commit()
 
     def get_all(self, skip: int = 0, limit: int = 100):
         return self.db.query(self.model).offset(skip).limit(limit).all()
@@ -35,8 +32,8 @@ class BaseRepository:
     def get_by_id(self, id: int):
         return self.db.query(self.model).filter(self.model.id == id).first()  # type: ignore
 
-    def create(self, data: dict, commit: bool = False):
-        return self.add(self.model(**data), commit=commit)
+    def create(self, data: dict):
+        return self.add(self.model(**data))
 
     def update(self, obj: Base, data: dict[str, Any]) -> Base:
         for key, value in data.items():

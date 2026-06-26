@@ -35,6 +35,7 @@ export const api = {
   searchBudgets: budgetsApi.search,
   createBudget: budgetsApi.create,
   updateBudget: budgetsApi.update,
+  updateBudgetStatus: budgetsApi.updateStatus,
   deleteBudget: budgetsApi.delete,
   downloadBudgetPdf: budgetsApi.downloadPdf,
   sendBudgetEmail: budgetsApi.sendEmail,
@@ -49,6 +50,7 @@ export const api = {
   createWorkOrder: workOrdersApi.create,
   createFromBudget: workOrdersApi.createFromBudget,
   updateWorkOrder: workOrdersApi.update,
+  updateWorkOrderStatus: workOrdersApi.updateStatus,
   deleteWorkOrder: workOrdersApi.delete,
   getNextWorkOrderNumber: workOrdersApi.nextNumber,
 

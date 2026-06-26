@@ -56,13 +56,19 @@ class ProductPhotoService:
         img.save(file_path, "WEBP", quality=85, optimize=True)
 
         relative_path = f"/uploads/product_photos/{stored_name}"
-        return self.repo.create({"file_path": relative_path, "title": title, "description": description})
+        photo = self.repo.create({"file_path": relative_path, "title": title, "description": description})
+        self.repo.db.commit()
+        self.repo.db.refresh(photo)
+        return photo
 
     def update(self, photo_id: int, data: dict) -> Optional[ProductPhoto]:
         photo = self.repo.get_by_id(photo_id)
         if not photo:
             return None
-        return self.repo.update(photo, data)
+        result = self.repo.update(photo, data)
+        self.repo.db.commit()
+        self.repo.db.refresh(result)
+        return result
 
     def delete(self, photo_id: int) -> bool:
         photo = self.repo.get_by_id(photo_id)
@@ -75,4 +81,5 @@ class ProductPhotoService:
         if os.path.exists(full_path):
             os.remove(full_path)
         self.repo.delete(photo)
+        self.repo.db.commit()
         return True

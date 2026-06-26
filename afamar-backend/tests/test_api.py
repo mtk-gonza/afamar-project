@@ -78,9 +78,9 @@ class TestBudgets:
             "subtotal": 50,
             "total": 50,
         })
-        r = client.put("/api/v1/budgets/1", json={"status": "approved"})
+        r = client.put("/api/v1/budgets/1", json={"status": "APPROVED"})
         assert r.status_code == 200
-        assert r.json()["data"]["status"] == "approved"
+        assert r.json()["data"]["status"] == "APPROVED"
 
 
 class TestWorkOrders:
@@ -92,7 +92,7 @@ class TestWorkOrders:
             "subtotal": 100,
             "total": 100,
         })
-        client.put("/api/v1/budgets/1", json={"status": "approved"})
+        client.put("/api/v1/budgets/1", json={"status": "APPROVED"})
         r = client.post("/api/v1/work-orders/from-budget/1")
         assert r.status_code == 201
         assert r.json()["data"]["number"].startswith("A-")
@@ -149,6 +149,50 @@ class TestCash:
         assert r.json()["is_closed"] is True
 
 
+class TestBudgetWorkOrderConversion:
+    def test_convert_non_approved_fails(self, client, seed_db):
+        client.post("/api/v1/clients", json={"name": "Client D"})
+        client.post("/api/v1/budgets", json={
+            "client_id": 1,
+            "items": [{"description": "Item", "quantity": 1, "unit_price": 100, "total": 100}],
+            "subtotal": 100,
+            "total": 100,
+        })
+        r = client.post("/api/v1/work-orders/from-budget/1")
+        assert r.status_code == 400
+
+    def test_convert_to_work_order_twice_fails(self, client, seed_db):
+        client.post("/api/v1/clients", json={"name": "Client E"})
+        client.post("/api/v1/budgets", json={
+            "client_id": 1,
+            "items": [{"description": "Item", "quantity": 1, "unit_price": 100, "total": 100}],
+            "subtotal": 100,
+            "total": 100,
+        })
+        client.put("/api/v1/budgets/1", json={"status": "APPROVED"})
+        r = client.post("/api/v1/work-orders/from-budget/1")
+        assert r.status_code == 201
+        r = client.post("/api/v1/work-orders/from-budget/1")
+        assert r.status_code == 400
+
+
+class TestOnlineBudgets:
+    def test_create_online_budget_public(self, public_client):
+        r = public_client.post("/api/v1/online-budgets", json={
+            "client_name": "Online User",
+            "client_phone": "123456789",
+            "client_email": "online@test.com",
+            "material": "Granito",
+            "color": "Negro",
+            "measurements": "2m x 1m",
+            "comments": "Test online budget",
+        })
+        assert r.status_code == 201
+        data = r.json()["data"]
+        assert data["client_name"] == "Online User"
+        assert data["status"] == "ONLINE"
+
+
 class TestWhatsAppWorkOrder:
     def test_send_work_order_whatsapp_no_phone(self, client, seed_db):
         client.post("/api/v1/clients", json={"name": "WO WA Client"})
@@ -158,7 +202,7 @@ class TestWhatsAppWorkOrder:
             "subtotal": 100,
             "total": 100,
         })
-        client.put("/api/v1/budgets/1", json={"status": "approved"})
+        client.put("/api/v1/budgets/1", json={"status": "APPROVED"})
         r = client.post("/api/v1/work-orders/from-budget/1")
         wo_id = r.json()["data"]["id"]
 

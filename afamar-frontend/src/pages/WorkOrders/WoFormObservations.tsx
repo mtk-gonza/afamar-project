@@ -1,6 +1,6 @@
-import { SketchEditor } from "../../components/SketchEditor/SketchEditor";
-import { SignaturePad } from "../../components/SignaturePad/SignaturePad";
-import type { SketchPage } from "../../types";
+import { SketchEditor } from "@/components/SketchEditor/SketchEditor";
+import { SignaturePad } from "@/components/SignaturePad/SignaturePad";
+import type { SketchPage } from "@/types";
 import styles from "./WorkOrderForm.module.css";
 
 interface Props {

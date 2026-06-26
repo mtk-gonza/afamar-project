@@ -1,5 +1,20 @@
 # AGENTS.md
 
+## Session context (Jun 2026)
+
+**Implemented (#1–#9):**
+- `run_migrations()` extraído, sin duplicado en lifespan
+- `SECRET_KEY` sin default (obligatorio en `.env`)
+- Auth verificada: routers admin ya protegidos (solo públicos: auth, photos GET, references GET, online POST)
+- ErrorBoundary envolviendo `<Routes>` en `App.tsx`
+- Mutation methods tipados (`data: any` → `CreateXxxInput` en clients, materials, pool_stock, measurements, online_budgets, cash, product_photos; Budget/WorkOrder keep `any` con helper `updateStatus`)
+- 37 tests (auth, API, product_photos, budget conversion, online budget) — `pytest` passes clean
+- BackgroundTasks en send-email (budgets + work_orders)
+- BudgetService refactorizado: `budget_calculator.py` extraído (90 líneas), `budget.py` de 350→233 líneas
+- Transacciones centralizadas en Services (repos sin `commit()` — solo `flush()` para IDs; cada service method mutante hace un único `commit()` + `refresh()` al final)
+
+**Phase 6 — TanStack Query migration (#10–#17):** All 19 pages migrated (see below).
+
 ## Stack
 
 - **Backend:** Python 3.14 + FastAPI + SQLAlchemy + SQLite (swappable to MySQL via `DATABASE_URL`)
@@ -22,7 +37,7 @@
 - **User model:** `users` table with username, email, hashed_password, full_name, is_active, is_admin
 - **Password hashing:** passlib bcrypt (requires bcrypt==4.1.3 for passlib compatibility)
 - **Seed admin user:** created on startup if no users exist → `admin` / `admin123`
-- **Protected routes:** backend uses `get_current_user` dependency (Bearer token) — currently admin routes NOT protected at API level (TODO: add `Depends(get_current_user)` to each router)
+- **Protected routes:** backend uses `Depends(get_current_user)` on all admin routers (budgets, work_orders, clients, materials, pool_stock, measurements, settings, daily_cash, reports, search, whatsapp, options). Public routes: auth (login), product photos (GET), references (GET), online budgets (POST — public form).
 - **Frontend auth:** `AuthContext` stores user + token in localStorage, axios interceptor adds Bearer header
 - **Frontend routing:** 
   - `/` — public landing page
@@ -56,7 +71,9 @@ afamar-frontend/   — Vite + React + TS
       client.ts    — typed API client (methods per resource)
       http.ts      — Axios instance with base URL + interceptors
     types/         — shared TypeScript interfaces
-    hooks/         — useApi, useApiList, useApiForm, useMutation
+    hooks/         — useApi, useApiList, useApiForm, useMutation (legacy — unused in migrated pages)
+    shared/api/    — TanStack Query hooks (useList, useGet, useCreate, useUpdate, useDelete) + queryClient
+    app/providers.tsx — QueryClientProvider + Auth + Notification + References
     context/       — NotificationContext, ReferencesContext (dynamic reference data)
     components/    — Layout, ErrorBoundary, ui/ (ListPage, StatusBadge, PageHeader, TableActions, FormActions, PieChart, ErrorBlock, useConfirm)
     pages/         — one folder per module
@@ -69,6 +86,15 @@ afamar-frontend/   — Vite + React + TS
 
 Note: both project folders carry the `afamar-` prefix (afamar-backend, afamar-frontend) so the monorepo can host multiple projects without name collisions.
 
+## TanStack Query migration (Phase 6)
+
+- **All 19 pages migrated** from manual `useState`+`useEffect` to TanStack Query via `useList`, `useGet` hooks.
+- **New dirs:** `src/shared/api/` (`queryClient.ts`, `hooks.ts`), `src/app/providers.tsx`.
+- **Alias imports** (`@/`, `@features/`, `@shared/`, `@assets/`) configured in `vite.config.ts` + `tsconfig.json`.
+- **Migrated pages:** Budgets, BudgetForm, WorkOrders, WorkOrderForm, Clients, ClientForm, Materials, MaterialForm, PoolStock, PoolStockForm, Measurements, MeasurementForm, OnlineBudgets, OnlineBudgetForm, DailyCashPage, CashHistory, Dashboard, Layout, Reports, Settings, ProductPhotos, MaterialConsultant.
+- **Legacy hooks** (`src/hooks/useApiList.ts`, `useApiForm.ts`) still exist but unused in migrated pages.
+- **Build passes clean** — `npm run build` (tsc + vite) yields 0 errors.
+
 ## Key conventions
 
 - CSS Modules with BEM: `styles["block__element--modifier"]`
@@ -79,7 +105,7 @@ Note: both project folders carry the `afamar-` prefix (afamar-backend, afamar-fr
 - Budget → Work Order conversion: `POST /api/v1/work-orders/from-budget/{id}`
 - Switching DB: change `DATABASE_URL` in `.env` (SQLite → `mysql+pymysql://user:pass@host/db`)
 - Standardized API response envelope: `{ success, data, error, pagination? }`
-- Forms use `Promise.allSettled` for initial data loading with `dataLoading`/`dataError` states
+- Forms use TanStack Query (`useList`/`useGet`) for data loading with loading/error states
 - Notification toasts via `useNotify()` from NotificationContext
 - Material model has `base_price` for auto-fill in budget items
 - Use `Optional[date]` / `Optional[datetime]` (not `date | None`) in Pydantic schemas for Python 3.14 compatibility
@@ -247,6 +273,7 @@ npm run preview                      # preview production build
 - `afamar-backend/app/schemas/work_order.py`: WorkOrder schemas (uses `Optional[date]`/`Optional[datetime]`).
 - `afamar-backend/app/schemas/measurement.py`: Measurement schemas.
 - `afamar-backend/app/schemas/online_budget.py`: OnlineBudget schemas.
+- `afamar-backend/app/services/budget_calculator.py`: Extracted calculation helpers (compute_surcharge, parse_materials_data, filter_main_materials, etc.) — used by budget, work_order, and pdf_html services.
 - `afamar-backend/app/services/*.py`: All services (budget, work_order, material, measurement, online_budget, report, whatsapp, product_photo).
 - `afamar-backend/app/api/v1/*.py`: All API endpoints (budgets, work_orders, materials, measurements, online_budgets, whatsapp, search, reports, product_photos, router).
 - `afamar-backend/app/models/reference.py`: Reference tables (BudgetStatus, WorkOrderStatus, PaymentMethod, PriorityLevel, FinishType) with FK relationships to Budget/WorkOrder.
@@ -270,5 +297,16 @@ npm run preview                      # preview production build
 - `afamar-backend/app/repositories/product_photo.py`: ProductPhotoRepository with get_latest().
 - `afamar-backend/app/services/product_photo.py`: ProductPhotoService with upload validation, Pillow resize/convert to WebP.
 - `afamar-backend/app/api/v1/product_photos.py`: Product photos CRUD endpoints — GETs are public, POST/PUT/DELETE require auth.
+- `afamar-backend/app/core/config.py`: `SECRET_KEY` has no default — must be set via `.env` or environment variable.
 - `afamar-backend/tests/test_product_photos.py`: 9 tests covering upload, validation, resize, update, delete, 404, public access.
+- `afamar-backend/tests/test_auth.py`: 9 tests covering register, login, /me, token validation, 401 on protected endpoints.
+- `afamar-backend/tests/conftest.py`: `public_client` fixture (no auth override) for testing auth flows.
 - `afamar-frontend/src/utils/translate.ts`: `enToEsLabels` map + `t(key)` helper for Spanish display of English DB values.
+- `afamar-frontend/src/components/ErrorBoundary/`: Class-based React error boundary wrapping `<Routes>` in `App.tsx`.
+- **Test infrastructure:** SQLite file-based (tempdir) for thread safety; `setup_db` auto-fixture creates/drops tables; `client` fixture overrides get_current_user + get_db; `public_client` fixture only overrides get_db.
+- **BackgroundTasks:** `/send-email` endpoints in budgets.py and work_orders.py use `BackgroundTasks` — PDF generation + email sent after response. Each task creates its own DB session via `SessionLocal` to avoid closed session errors.
+- **Refactored BudgetService:** `app/services/budget_calculator.py` extracted (90 lines); `budget.py` went from 350→233 lines. Static methods moved to standalone functions.
+- **Plan items tracked in `PLAN.md` (3 phases, 17+ items).** Implemented: #1 duplicate migration code removed, #2 SECRET_KEY required, #3 auth verified/docs only, #4 ErrorBoundary added, #5 tests (37 total, all passing), #7 BackgroundTasks, #8 BudgetService refactor.
+- `src/shared/api/hooks.ts`: TanStack Query hooks (useList, useGet, useCreate, useUpdate, useDelete)
+- `src/shared/api/queryClient.ts`: QueryClient with 5min staleTime
+- `src/app/providers.tsx`: Provider wrapper (QueryClientProvider + Auth + Notification + References)

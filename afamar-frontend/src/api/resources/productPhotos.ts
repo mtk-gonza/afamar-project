@@ -1,6 +1,6 @@
-import http from "../http";
-import { wrap } from "../wrap";
-import type { ProductPhoto } from "../../types";
+import http from "@/api/http";
+import { wrap } from "@/api/wrap";
+import type { CreateProductPhotoData, ProductPhoto } from "@/types";
 
 export const productPhotosApi = {
   list: (skip = 0, limit = 100) => wrap<ProductPhoto[]>(() => http.get("/product-photos", { params: { skip, limit } })),
@@ -12,6 +12,6 @@ export const productPhotosApi = {
         headers: { "Content-Type": "multipart/form-data" },
       }),
     ),
-  update: (id: number, data: any) => wrap<ProductPhoto>(() => http.put(`/product-photos/${id}`, data)),
+  update: (id: number, data: CreateProductPhotoData) => wrap<ProductPhoto>(() => http.put(`/product-photos/${id}`, data)),
   delete: (id: number) => http.delete(`/product-photos/${id}`),
 };

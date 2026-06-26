@@ -22,10 +22,14 @@ class DailyCashService:
             cash = self.cash_repo.get_or_create(movement_date)
         else:
             raise HTTPException(status_code=400, detail="Date is required")
-        return self.movement_repo.create_and_recalculate(cash.id, movement_data)
+        movement = self.movement_repo.create_and_recalculate(cash.id, movement_data)
+        self.db.commit()
+        self.db.refresh(movement)
+        return movement
 
     def delete_movement(self, movement_id: int):
         self.movement_repo.delete(movement_id)
+        self.db.commit()
 
     def update_previous_balance(self, query_date: date, previous_balance: float):
         cash = self.cash_repo.get_or_create(query_date)

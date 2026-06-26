@@ -32,6 +32,15 @@ def setup_db():
 
 
 @pytest.fixture
+def public_client(setup_db):
+    """Client without auth override — for testing login/register/401."""
+    app.dependency_overrides[get_db] = override_get_db
+    with TestClient(app) as c:
+        yield c
+    app.dependency_overrides.clear()
+
+
+@pytest.fixture
 def client(setup_db):
     app.dependency_overrides[get_db] = override_get_db
     app.dependency_overrides[get_current_user] = lambda: User(

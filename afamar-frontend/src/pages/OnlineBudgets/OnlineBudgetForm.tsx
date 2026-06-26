@@ -1,9 +1,10 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { api } from "../../api/client";
-import { useNotify } from "../../context/NotificationContext";
-import { ErrorBlock } from "../../components/ui/ErrorBlock";
-import type { Material, PoolStock, OnlineBudget } from "../../types";
+import { api } from "@/api/client";
+import { useNotify } from "@/context/NotificationContext";
+import { ErrorBlock } from "@/components/ui/ErrorBlock";
+import { useList, useGet } from "@/shared/api/hooks";
+import type { Material, PoolStock, OnlineBudget } from "@/types";
 import { ObFormHeader } from "./ObFormHeader";
 import { ObFormTotals } from "./ObFormTotals";
 import styles from "./OnlineBudgets.module.css";
@@ -45,11 +46,10 @@ export function OnlineBudgetForm() {
   const navigate = useNavigate();
   const notify = useNotify();
   const isEdit = Boolean(id);
-  const mounted = useRef(true);
+  const numId = id ? Number(id) : null;
 
   const [materials, setMaterials] = useState<Material[]>([]);
   const [poolStock, setPoolStock] = useState<PoolStock[]>([]);
-  const [dataLoading, setDataLoading] = useState(true);
   const [dataError, setDataError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
@@ -209,67 +209,57 @@ export function OnlineBudgetForm() {
     return L.join("\n");
   };
 
-  const loadData = useCallback(async () => {
-    setDataLoading(true);
+  const { loading: dataLoading, load: loadData } = useList(["obFormData"], async () => {
     setDataError(null);
     try {
       const [mat, ps] = await Promise.all([api.getMaterials(), api.getPoolStock()]);
-      if (!mounted.current) return;
       setMaterials(mat);
       setPoolStock(ps);
     } catch {
-      if (mounted.current) setDataError("Error al cargar datos del formulario");
-    } finally {
-      if (mounted.current) setDataLoading(false);
+      setDataError("Error al cargar datos del formulario");
     }
-  }, []);
+    return [];
+  });
 
-  useEffect(() => {
-    mounted.current = true;
-    loadData();
-    if (id) {
-      api.getOnlineBudget(Number(id)).then((ob: OnlineBudget) => {
-        if (!mounted.current) return;
-        setClientName(ob.client_name || "");
-        setWorkType(ob.work_type || "");
-        setDate(ob.date || new Date().toISOString().slice(0, 10));
-        setUsdRate(ob.usd_rate);
-        setConvertedNumber(ob.number);
+  useGet(["onlineBudget", numId], () => api.getOnlineBudget(numId!).then((ob: OnlineBudget) => {
+    setClientName(ob.client_name || "");
+    setWorkType(ob.work_type || "");
+    setDate(ob.date || new Date().toISOString().slice(0, 10));
+    setUsdRate(ob.usd_rate);
+    setConvertedNumber(ob.number);
 
-        let parsedItems: any[] = [];
-        try { if (ob.items_data) parsedItems = JSON.parse(ob.items_data); } catch { parsedItems = []; }
+    let parsedItems: any[] = [];
+    try { if (ob.items_data) parsedItems = JSON.parse(ob.items_data); } catch { parsedItems = []; }
 
-        const phoneVal = parsedItems.find((i: any) => i._meta?.phone)?.phone || "";
-        if (phoneVal) setPhone(phoneVal);
+    const phoneVal = parsedItems.find((i: any) => i._meta?.phone)?.phone || "";
+    if (phoneVal) setPhone(phoneVal);
 
-        const meta = parsedItems.find((i: any) => i && i._meta);
-        if (meta) {
-          setPhone(meta._meta.phone || "");
-          parsedItems = parsedItems.filter((i: any) => !i._meta);
-        }
-
-        const normales = parsedItems.filter((i: any) => !i.es_unidad && !NOMBRES_ESPECIALES.has(i.detalle)).map((i: any) => ({
-          ...emptyItem("LONGITUD", false), detalle: i.detalle || "LONGITUD", largo: Number(i.largo) || 0, ancho: Number(i.ancho) || 0, m2: Number(i.m2) || 0, cantidad: Math.max(1, Number(i.cantidad) || 1), moneda: i.moneda || "ARS", precio_unitario: Number(i.precio_unitario) || 0, subtotal: Number(i.subtotal) || 0
-        }));
-        const esp = parsedItems.filter((i: any) => i.es_unidad || NOMBRES_ESPECIALES.has(i.detalle)).map((i: any) => {
-          const e = emptySpecial(i.detalle || "ZOCALOS", i.es_unidad || false);
-          e.largo = Number(i.largo) || 0; e.ancho = Number(i.ancho) || 0; e.m2 = Number(i.m2) || 0;
-          e.cantidad = Math.max(1, Number(i.cantidad) || 1); e.moneda = i.moneda || "ARS";
-          e.precio_unitario = Number(i.precio_unitario) || 0; e.subtotal = Number(i.subtotal) || 0;
-          e.material = i.material || ""; e.pileta_id = i.pileta_id || (ob.pool_id || null); e.mano_de_obra = Number(i.mano_de_obra) || 0;
-          return e;
-        });
-
-        setItems(normales.length ? normales : [emptyItem("LONGITUD", false)]);
-        setEspeciales(esp.length ? esp : [emptySpecial("ZOCALOS", false)]);
-
-        const matEsp: Record<number, string> = {};
-        esp.forEach((e: SpecialItemRow, i: number) => { if (e.material) matEsp[i] = e.material; });
-        setMatEspeciales(matEsp);
-      }).catch(() => notify("Error al cargar presupuesto online", "error"));
+    const meta = parsedItems.find((i: any) => i && i._meta);
+    if (meta) {
+      setPhone(meta._meta.phone || "");
+      parsedItems = parsedItems.filter((i: any) => !i._meta);
     }
-    return () => { mounted.current = false; };
-  }, [id, loadData, notify]);
+
+    const normales = parsedItems.filter((i: any) => !i.es_unidad && !NOMBRES_ESPECIALES.has(i.detalle)).map((i: any) => ({
+      ...emptyItem("LONGITUD", false), detalle: i.detalle || "LONGITUD", largo: Number(i.largo) || 0, ancho: Number(i.ancho) || 0, m2: Number(i.m2) || 0, cantidad: Math.max(1, Number(i.cantidad) || 1), moneda: i.moneda || "ARS", precio_unitario: Number(i.precio_unitario) || 0, subtotal: Number(i.subtotal) || 0
+    }));
+    const esp = parsedItems.filter((i: any) => i.es_unidad || NOMBRES_ESPECIALES.has(i.detalle)).map((i: any) => {
+      const e = emptySpecial(i.detalle || "ZOCALOS", i.es_unidad || false);
+      e.largo = Number(i.largo) || 0; e.ancho = Number(i.ancho) || 0; e.m2 = Number(i.m2) || 0;
+      e.cantidad = Math.max(1, Number(i.cantidad) || 1); e.moneda = i.moneda || "ARS";
+      e.precio_unitario = Number(i.precio_unitario) || 0; e.subtotal = Number(i.subtotal) || 0;
+      e.material = i.material || ""; e.pileta_id = i.pileta_id || (ob.pool_id || null); e.mano_de_obra = Number(i.mano_de_obra) || 0;
+      return e;
+    });
+
+    setItems(normales.length ? normales : [emptyItem("LONGITUD", false)]);
+    setEspeciales(esp.length ? esp : [emptySpecial("ZOCALOS", false)]);
+
+    const matEsp: Record<number, string> = {};
+    esp.forEach((e: SpecialItemRow, i: number) => { if (e.material) matEsp[i] = e.material; });
+    setMatEspeciales(matEsp);
+    return ob;
+  }), isEdit);
 
   const buildPayload = () => {
     const allItems = [...items, ...especiales];

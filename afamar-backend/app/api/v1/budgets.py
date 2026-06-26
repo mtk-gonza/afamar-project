@@ -1,10 +1,12 @@
+import logging
 from datetime import date
 from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query
 from fastapi.responses import Response
 from sqlalchemy.orm import Session
 
+from app.core.database import SessionLocal
 from app.core.dependencies import get_current_user, get_db
 from app.core.exceptions import NotFoundError
 from app.core.responses import PaginationInfo, created, success
@@ -14,6 +16,27 @@ from app.schemas.budget import BudgetCreate, BudgetResponse, BudgetUpdate
 from app.services.budget import BudgetService
 from app.services.email import send_budget_email
 from app.services.pdf_html import build_budget_pdf_data, generate_budget_pdf
+
+logger = logging.getLogger(__name__)
+
+
+def _email_budget_background(budget_id: int) -> None:
+    db = SessionLocal()
+    try:
+        service = BudgetService(db)
+        budget = service.get_by_id(budget_id)
+        if not budget or not budget.client or not budget.client.email:
+            logger.warning("Budget %s or client email not found for background email", budget_id)
+            return
+        budget_data, client_dict, company, terms = _prepare_budget_payload(budget, db)
+        pdf_data = build_budget_pdf_data(budget_data, client_dict, company, terms)
+        pdf_bytes = generate_budget_pdf(pdf_data, logo_path=company.get("company_logo")).read()
+        company_name = company.get("company_name") or "AFAMAR"
+        send_budget_email(budget.client.email, pdf_bytes, budget.number, company_name=company_name)
+    except Exception:
+        logger.exception("Background email failed for budget %s", budget_id)
+    finally:
+        db.close()
 
 router = APIRouter(dependencies=[Depends(get_current_user)])
 
@@ -215,7 +238,7 @@ def download_budget_pdf(budget_id: int, db: Session = Depends(get_db)):
 
 
 @router.post("/{budget_id}/send-email")
-def email_budget(budget_id: int, db: Session = Depends(get_db)):
+def email_budget(budget_id: int, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
     service = BudgetService(db)
     budget = service.get_by_id(budget_id)
     if not budget:
@@ -225,16 +248,5 @@ def email_budget(budget_id: int, db: Session = Depends(get_db)):
     if not client.email:
         raise HTTPException(status_code=400, detail="El cliente no tiene email registrado")
 
-    budget_data, client_dict, company, terms = _prepare_budget_payload(budget, db)
-    pdf_data = build_budget_pdf_data(budget_data, client_dict, company, terms)
-    pdf_bytes = generate_budget_pdf(pdf_data, logo_path=company.get("company_logo")).read()
-    company_name = company.get("company_name") or "AFAMAR"
-
-    try:
-        send_budget_email(client.email, pdf_bytes, budget.number, company_name=company_name)
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error al enviar email: {str(e)}")
-
-    return success({"message": "Email enviado correctamente"})
+    background_tasks.add_task(_email_budget_background, budget_id)
+    return success({"message": "Enviando email en segundo plano"})

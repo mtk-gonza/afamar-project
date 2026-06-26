@@ -21,7 +21,7 @@ class DailyCashRepository:
             return existing
         cash = DailyCash(date=query_date)
         self.db.add(cash)
-        self.db.commit()
+        self.db.flush()
         self.db.refresh(cash)
         return cash
 
@@ -56,8 +56,6 @@ class DailyCashRepository:
         )
         cash.real_cash = (cash.previous_balance or 0) + cash_income - (total_expenses - tb_expenses)
 
-        self.db.commit()
-        self.db.refresh(cash)
         return cash
 
 
@@ -81,7 +79,7 @@ class CashMovementRepository:
         data["daily_cash_id"] = daily_cash_id
         movement = CashMovement(**data)
         self.db.add(movement)
-        self.db.commit()
+        self.db.flush()
         self.db.refresh(movement)
         return movement
 
@@ -95,5 +93,4 @@ class CashMovementRepository:
         if movement:
             cash_id = movement.daily_cash_id
             self.db.delete(movement)
-            self.db.commit()
             DailyCashRepository(self.db).recalculate(cash_id)
